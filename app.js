@@ -28,7 +28,7 @@ Math.degrees = function(radians) {
 };
 
 // https://www.movable-type.co.uk/scripts/latlong.html
-// φ is latitude, λ is longitude, R is earth’s radius (mean radius = 3,440 nm)
+// φ is latitude in radians, λ is longitude in radians, R is earth’s radius (mean radius = 3,440 nm)
 function addDistanceAndBearing(aircraft) {
   for (let i = 0; i < aircraft.length; i++) {
     const φ1 = Math.radians(location.lat);
@@ -50,6 +50,7 @@ function addDistanceAndBearing(aircraft) {
       Math.sin(φ1) * Math.cos(φ2) * Math.cos(λ2 - λ1);
     const bearing = (Math.degrees(Math.atan2(y, x)) + 360) % 360;
 
+    // add distance & bearing properties
     aircraft[i].distance = distance;
     aircraft[i].bearing = Math.round(bearing);
   }
