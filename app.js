@@ -163,10 +163,10 @@ getReceiverInfo()
   .then(results => {
     location.lat = results.lat;
     location.lon = results.lon;
-    console.log('Location changed to:', location.lat, locatio.lon);
+    console.log('Location changed to:', location.lat, location.lon);
   })
   .catch(error => {
-    console.log('error initializing', error);
+    console.log('Error contacting server: ', error);
   });
 
 const port = process.env.PORT || 9000;
