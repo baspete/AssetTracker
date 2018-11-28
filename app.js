@@ -5,7 +5,7 @@ const express = require('express'),
   app = express();
 
 // URL for PiAware Server
-const host = 'http://192.168.1.5';
+const host = process.env.PIAWAREHOST || 'http://192.168.1.5';
 
 // Start with KOAK as a location, we'll switch this to the
 // receiver's location when we initialize the app
@@ -27,8 +27,13 @@ Math.degrees = function(radians) {
   return (radians * 180) / Math.PI;
 };
 
-// https://www.movable-type.co.uk/scripts/latlong.html
-// φ is latitude in radians, λ is longitude in radians, R is earth’s radius (mean radius = 3,440 nm)
+/**
+ * This function calculates the bearing and distance from the receiver to an aircraft.
+ * φ is latitude in radians, λ is longitude in radians, R is earth’s radius (mean radius = 3,440 nm)
+ * https://www.movable-type.co.uk/scripts/latlong.html
+ *
+ * @param {object} aircraft An aircraft object from dump1090-fa/data/aircraft.json
+ */
 function addDistanceAndBearing(aircraft) {
   for (let i = 0; i < aircraft.length; i++) {
     const φ1 = Math.radians(location.lat);
@@ -50,13 +55,18 @@ function addDistanceAndBearing(aircraft) {
       Math.sin(φ1) * Math.cos(φ2) * Math.cos(λ2 - λ1);
     const bearing = (Math.degrees(Math.atan2(y, x)) + 360) % 360;
 
-    // add distance & bearing properties
+    // add distance & bearing properties to the aircraft data
     aircraft[i].distance = distance;
     aircraft[i].bearing = Math.round(bearing);
   }
   return aircraft;
 }
 
+/**
+ * Given a list of aircraft, his function will return a new list sorted by distance
+ * and filtered to show only responses with lat/lon/altitude data
+ * @param {array} aircraft An array of aircraft returned by dump1090-fa/data/aircraft.json
+ */
 function filter(aircraft) {
   // Filter out stuff we don't want
   let filtered = aircraft.filter(a => {
@@ -82,6 +92,9 @@ function filter(aircraft) {
 // ========================================================================
 // GETTING DATA
 
+/**
+ * Retrieves information about the PiAware receiver
+ */
 function getReceiverInfo() {
   return axios
     .get(`${host}/dump1090-fa/data/receiver.json`)
@@ -93,6 +106,12 @@ function getReceiverInfo() {
     });
 }
 
+/**
+ * This function will retrieve status information from a PiAware receiver.
+ *
+ * @param {object} req An Express request object
+ * @param {object} res An express response object
+ */
 function getServerStatus(req, res) {
   return axios
     .get(`${host}/status.json`)
@@ -104,6 +123,12 @@ function getServerStatus(req, res) {
     });
 }
 
+/**
+ * This function will retrieve the most recent aircraft list from a PiAware receiver.
+ *
+ * @param {object} req An Express request object
+ * @param {object} res An express response object
+ */
 function getAircraft(req, res) {
   return axios
     .get(`${host}/dump1090-fa/data/aircraft.json`)
@@ -136,9 +161,9 @@ app.use('/', express.static('public'));
 
 getReceiverInfo()
   .then(results => {
-    console.log('receiverInfo:', results);
     location.lat = results.lat;
     location.lon = results.lon;
+    console.log('Location changed to:', location.lat, locatio.lon);
   })
   .catch(error => {
     console.log('error initializing', error);
