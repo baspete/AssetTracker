@@ -78,7 +78,6 @@ function filter(aircraft) {
   let sorted = filtered.sort((a, b) => {
     return a.distance - b.distance;
   });
-  console.log('sorted:');
   for (let i = 0; i < sorted.length; i++) {
     console.log(
       `${sorted[i].flight || 'N/A     '}: ${sorted[i].bearing}/${sorted[
