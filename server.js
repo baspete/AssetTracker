@@ -70,7 +70,7 @@ function addDistanceAndBearing(aircraft) {
 function filter(aircraft) {
   // Filter out stuff we don't want
   let filtered = aircraft.filter(a => {
-    return a.flight && a.lat && a.lon && a.alt_baro;
+    return a.lat && a.lon && a.alt_baro;
   });
   // Add distance an bearing properties
   filtered = addDistanceAndBearing(filtered);
@@ -81,9 +81,9 @@ function filter(aircraft) {
   console.log('sorted:');
   for (let i = 0; i < sorted.length; i++) {
     console.log(
-      `${sorted[i].flight}: ${sorted[i].bearing}/${sorted[i].distance.toFixed(
-        1
-      )} ${sorted[i].alt_baro}ft ${sorted[i].gs}kts`
+      `${sorted[i].flight || 'N/A     '}: ${sorted[i].bearing}/${sorted[
+        i
+      ].distance.toFixed(1)} ${sorted[i].alt_baro}ft ${sorted[i].gs}kts`
     );
   }
   return sorted;
@@ -107,7 +107,7 @@ function getReceiverInfo() {
 }
 
 /**
- * This function will retrieve status information from a PiAware receiver.
+ * This function retrieves the status of the PiAware server
  *
  * @param {object} req An Express request object
  * @param {object} res An express response object
@@ -123,12 +123,6 @@ function getServerStatus(req, res) {
     });
 }
 
-/**
- * This function will retrieve the most recent aircraft list from a PiAware receiver.
- *
- * @param {object} req An Express request object
- * @param {object} res An express response object
- */
 function getAircraft(req, res) {
   return axios
     .get(`${host}/dump1090-fa/data/aircraft.json`)
@@ -144,6 +138,16 @@ function getAircraft(req, res) {
 // ========================================================================
 // API ENDPOINTS
 
+// Allow CORS
+app.use(function(req, res, next) {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept'
+  );
+  next();
+});
+
 app.use('/api/status', (req, res) => {
   getServerStatus(req, res);
 });
@@ -154,7 +158,15 @@ app.use('/api/aircraft', (req, res) => {
 
 // ========================================================================
 // WEB APP
-app.use('/', express.static('public'));
+
+// Built files are in 'dist'
+app.use('/dist', express.static('dist'));
+
+// Use res.sendFile() to ensure this is the only file
+// we serve from the root directory
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
+});
 
 // ========================================================================
 // INIT
@@ -163,10 +175,10 @@ getReceiverInfo()
   .then(results => {
     location.lat = results.lat;
     location.lon = results.lon;
-    console.log('Location changed to:', location.lat, location.lon);
+    console.log('Receiver location is', location.lat, location.lon);
   })
   .catch(error => {
-    console.log('Error contacting server: ', error);
+    console.log('error initializing', error);
   });
 
 const port = process.env.PORT || 9000;
