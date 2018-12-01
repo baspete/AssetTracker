@@ -32,7 +32,8 @@ Math.degrees = function(radians) {
  * φ is latitude in radians, λ is longitude in radians, R is earth’s radius (mean radius = 3,440 nm)
  * https://www.movable-type.co.uk/scripts/latlong.html
  *
- * @param {object} aircraft An aircraft object from dump1090-fa/data/aircraft.json
+ * @param {array} aircraft An aircraft object from dump1090-fa/data/aircraft.json
+ * @returns {array}
  */
 function addDistanceAndBearing(aircraft) {
   for (let i = 0; i < aircraft.length; i++) {
@@ -63,6 +64,26 @@ function addDistanceAndBearing(aircraft) {
 }
 
 /**
+ *  This function parses the "flight" property and adds "airline" and "flight_num" properties
+ * @param {array} aircraft An aircraft object from dump1090-fa/data/aircraft.json
+ * @returns {array}
+ */
+function addAirlineAndFlight(aircraft) {
+  for (let i = 0; i < aircraft.length; i++) {
+    let a = aircraft[i];
+    if (a.flight) {
+      let identifier = a.flight.match(/\D+/)[0];
+      let flight_num = a.flight.match(/\d+/)[0];
+      if (identifier && identifier.length === 3) {
+        a.airline = identifier;
+        a.flight_num = flight_num;
+      }
+    }
+  }
+  return aircraft;
+}
+
+/**
  * Given a list of aircraft, his function will return a new list sorted by distance
  * and filtered to show only responses with lat/lon/altitude data
  * @param {array} aircraft An array of aircraft returned by dump1090-fa/data/aircraft.json
@@ -70,10 +91,12 @@ function addDistanceAndBearing(aircraft) {
 function filter(aircraft) {
   // Filter out stuff we don't want
   let filtered = aircraft.filter(a => {
-    return a.lat && a.lon && a.alt_baro;
+    return a.lat && a.lon && a.alt_geom;
   });
   // Add distance an bearing properties
   filtered = addDistanceAndBearing(filtered);
+  // Add airline and flight number fields
+  filtered = addAirlineAndFlight(filtered);
   // Sort by distance
   let sorted = filtered.sort((a, b) => {
     return a.distance - b.distance;
@@ -82,7 +105,7 @@ function filter(aircraft) {
     console.log(
       `${sorted[i].flight || 'N/A     '}: ${sorted[i].bearing}/${sorted[
         i
-      ].distance.toFixed(1)} ${sorted[i].alt_baro}ft ${sorted[i].gs}kts`
+      ].distance.toFixed(1)} ${sorted[i].alt_geom}ft ${sorted[i].gs}kts`
     );
   }
   return sorted;
