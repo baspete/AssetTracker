@@ -8,13 +8,17 @@
   "main": "server.js",
   "scripts": {
     "dev": "npm run server | npm run vue",
+    "stop": "pm2 delete all",
     "server": "pm2 start server.js --watch --name server",
     "vue": "cross-env NODE_ENV=development pm2 start webpack-dev-server --name vue -- --open --hot --port=9001",
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
   },
   "dependencies": {
     "axios": "^0.18.0",
+    "backbone": "^1.3.3",
     "express": "^4.16.4",
+    "jquery": "^3.3.1",
+    "underscore": "^1.9.1",
     "vue": "^2.5.11"
   },
   "browserslist": [

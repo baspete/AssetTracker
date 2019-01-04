@@ -27,13 +27,39 @@ Math.degrees = function(radians) {
   return (radians * 180) / Math.PI;
 };
 
+function getCompassPoints(degrees) {
+  if (typeof degrees !== 'number') {
+    return degrees.toString();
+  } else {
+    if (degrees < 22.5) {
+      return 'N';
+    } else if (degrees < 67.5) {
+      return 'NE';
+    } else if (degrees < 112.5) {
+      return 'E';
+    } else if (degrees < 157.5) {
+      return 'SE';
+    } else if (degrees < 202.5) {
+      return 'S';
+    } else if (degrees < 247.5) {
+      return 'SW';
+    } else if (degrees < 292.5) {
+      return 'W';
+    } else if (degrees < 337.5) {
+      return 'NW';
+    } else if (degrees < 360.5) {
+      return 'N';
+    }
+  }
+}
+
 /**
  * This function calculates the bearing and distance from the receiver to an aircraft.
  * φ is latitude in radians, λ is longitude in radians, R is earth’s radius (mean radius = 3,440 nm)
  * https://www.movable-type.co.uk/scripts/latlong.html
  *
  * @param {array} aircraft An aircraft object from dump1090-fa/data/aircraft.json
- * @returns {array}
+ * @returns {array} The same list with additional "distance", "bearing" and "compass" properties
  */
 function addDistanceAndBearing(aircraft) {
   for (let i = 0; i < aircraft.length; i++) {
@@ -58,7 +84,10 @@ function addDistanceAndBearing(aircraft) {
 
     // add distance & bearing properties to the aircraft data
     aircraft[i].distance = distance;
-    aircraft[i].bearing = Math.round(bearing);
+    aircraft[i].bearing = Math.round(bearing)
+      .toString()
+      .padStart(3, '0');
+    aircraft[i].compass = getCompassPoints(bearing);
   }
   return aircraft;
 }
@@ -76,7 +105,7 @@ function addAirlineAndFlight(aircraft) {
       let flight_num = a.flight.match(/\d+/)[0];
       if (identifier && identifier.length === 3) {
         a.airline = identifier;
-        a.flight_num = flight_num;
+        a['flight-num'] = flight_num;
       }
     }
   }
@@ -86,12 +115,13 @@ function addAirlineAndFlight(aircraft) {
 /**
  * Given a list of aircraft, his function will return a new list sorted by distance
  * and filtered to show only responses with lat/lon/altitude data
- * @param {array} aircraft An array of aircraft returned by dump1090-fa/data/aircraft.json
+ * @param {array}  aircraft An array of aircraft returned by dump1090-fa/data/aircraft.json
+ * @param {number} maxResults The maximum number of results to return
  */
-function filter(aircraft) {
-  // Filter out stuff we don't want
+function filter(aircraft, maxResults) {
+  // Only return aircraft lat/lon/alt
   let filtered = aircraft.filter(a => {
-    return a.lat && a.lon && a.alt_geom;
+    return a.lat && a.lon && typeof a.alt_geom === 'number';
   });
   // Add distance an bearing properties
   filtered = addDistanceAndBearing(filtered);
@@ -101,12 +131,8 @@ function filter(aircraft) {
   let sorted = filtered.sort((a, b) => {
     return a.distance - b.distance;
   });
-  for (let i = 0; i < sorted.length; i++) {
-    console.log(
-      `${sorted[i].flight || 'N/A     '}: ${sorted[i].bearing}/${sorted[
-        i
-      ].distance.toFixed(1)} ${sorted[i].alt_geom}ft ${sorted[i].gs}kts`
-    );
+  if (maxResults && sorted.length > maxResults) {
+    sorted = sorted.slice(0, maxResults);
   }
   return sorted;
 }
@@ -149,11 +175,11 @@ function getAircraft(req, res) {
   return axios
     .get(`${host}/dump1090-fa/data/aircraft.json`)
     .then(response => {
-      let aircraft = filter(response.data.aircraft);
+      let aircraft = filter(response.data.aircraft, req.query.n);
       res.json(aircraft);
     })
     .catch(error => {
-      res.json({ error });
+      res.send('Error Getting Aircraft ' + error);
     });
 }
 

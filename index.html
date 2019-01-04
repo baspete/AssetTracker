@@ -1,57 +1,135 @@
-<!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
-    <meta charset="utf-8" />
-    <title>Flight Tracker</title>
-    <style type="text/css">
-      table {
-        font-family: monospace;
-        border-collapse: collapse;
-      }
-      td {
-        text-align: right;
-        border: 1px solid #efefef;
-      }
-      th,
-      td {
-        padding: 0.2em 1em;
-      }
-    </style>
+    <link rel="stylesheet" href="/public/css/base.css" />
+
+    <!-- ============================================ -->
+    <!-- CUSTOM CSS FOR THIS BOARD -->
+    <link rel="stylesheet" href="/public/plugins/adsb/custom.css" />
   </head>
   <body>
-    <div id="aircraft">
-      <table>
-        <thead>
-          <th>Airline</th>
-          <th>Flight</th>
-          <th>Distance</th>
-          <th>Bearing</th>
-          <th>Altitude</th>
-          <th>Speed</th>
-          <th>Heading</th>
-        </thead>
-        <tbody>
-          <tr v-for="a in aircraft">
-            <td>{{ a.airline || '---' }}</td>
-            <td>{{ a.flight_num || a.flight }}</td>
-            <td>{{ a.distance.toFixed(1) }}</td>
-            <td>
-              <compass-heading v-bind:heading="a.bearing"></compass-heading>
-            </td>
-            <td>
-              <altitude-display
-                v-bind:alt="a.alt_geom"
-                v-bind:rate="a.geom_rate"
-              ></altitude-display>
-            </td>
-            <td>{{ Math.round(a.gs) || '---' }}</td>
-            <td>
-              <compass-heading v-bind:heading="a.track"></compass-heading>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- ============================================ -->
+    <!-- CONTAINER -->
+    <div id="board" class="chartContainer splitflap">
+      <h1>ADS-B Traffic</h1>
+
+      <!-- Header: 30px/char, 15px/separator, 120px/logo -->
+      <div class="header" style="width:110px;margin-left:0px;">Airline</div>
+      <div class="header" style="width:210px;margin-left:30px;">
+        Flight / Tail
+      </div>
+      <div class="header" style="width:180px;margin-left:30px;">Location</div>
+      <div class="header" style="width:180px;margin-left:30px;">Altitude</div>
+      <div class="header" style="width:90px;margin-left:30px;">Speed</div>
+      <div class="header" style="width:430px;margin-left:30px;">Remarks</div>
+
+      <!-- rows will be placed here dynamically from #row_template -->
     </div>
-    <script src="/dist/build.js"></script>
+    <!-- END CONTAINER -->
+    <!-- ============================================ -->
+
+    <!-- ============================================ -->
+    <!-- ROW TEMPLATE -->
+    <script type="text/template" id="row_template">
+      <div class="row">
+        <div class="group airline"> <!-- airline -->
+          <div class="image"><span></span></div>
+        </div>
+        <div class="group flight"> <!-- flight/tail number -->
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+        </div>
+        <div class="group location-str"> <!-- location -->
+          <div class="number"><span></span></div>
+          <div class="number"><span></span></div>
+          <div class="separator">.</div>
+          <div class="number"><span></span></div>
+          <div class="separator"> </div>
+          <div class="character"><span></span></div>
+          <div class="character"><span></span></div>
+        </div>
+        <div class="group altitude-str"> <!-- altitude -->
+          <div class="number"><span></span></div>
+          <div class="number"><span></span></div>
+          <div class="number"><span></span></div>
+          <div class="number"><span></span></div>
+          <div class="number"><span></span></div>
+          <div class="full"><span></span></div>
+        </div>
+        <div class="group airspeed-str"> <!-- airspeed -->
+          <div class="number"><span></span></div>
+          <div class="number"><span></span></div>
+          <div class="number"><span></span></div>
+        </div>
+        <div class="group remarks"> <!-- Remarks -->
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+        </div>
+      </div>
+    </script>
+    <!-- END ROW TEMPLATE -->
+    <!-- ============================================ -->
+
+    <!-- ============================================ -->
+    <!-- JS LIBRARIES -->
+    <script
+      type="text/javascript"
+      src="/public/js/jquery-3.3.1-min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="/public/js/underscore_1.9.1.js"
+    ></script>
+    <script type="text/javascript" src="/public/js/backbone_1.3.3.js"></script>
+    <script type="text/javascript" src="/public/js/split-flap.js"></script>
+    <!-- <script src="/dist/build.js"></script> -->
+
+    <!-- ============================================ -->
+    <!-- CUSTOM JS FOR THIS BOARD -->
+    <script
+      type="text/javascript"
+      src="/public/plugins/adsb/custom.js"
+    ></script>
+    <script type="text/javascript">
+      // CUSTOMIZATION OPTIONS
+      sf.options = {
+        // REQUIRED
+        plugin: 'adsb', // board type
+        container: $('#board'), // where to put the board
+        template: $('#row_template'), // template markup
+        numRows: 2, // number of rows
+
+        // OPTIONAL
+        maxResults: 3, // number of items to retrieve from service
+        sort: 'location-str',
+        order: 'asc',
+        refreshInterval: 20000, // how often to refresh the display (ms)
+        pageInterval: 10000, // delay between pages (ms)
+        stagger: 1500, // delay between loading rows (ms)
+        pageReloadAt: 120 // number of refreshes before clearing & reloading window
+      };
+
+      $(document).ready(function() {
+        sf.board.init(sf.options);
+        sf.items.init(sf.options);
+        sf.items.load(sf.options);
+      });
+    </script>
   </body>
 </html>

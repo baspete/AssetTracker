@@ -38,25 +38,25 @@ Vue.component('altitude-display', {
   template: '<span>{{alt.toLocaleString()}} {{trendSymbol}}</span>'
 });
 
-new Vue({
-  created() {
-    console.log('PiAware server is at', this.$server);
-  },
-  el: '#aircraft',
-  data: {
-    aircraft: null
-  },
-  formatCompass(heading) {
-    let headingStr = Math.round(heading).toString();
-    for (let i = headingStr.length; i < 3; i++) {
-      headingStr = '0' + headingStr;
-    }
-    console.log(heading, headingStr);
-    return headingStr;
-  },
-  mounted() {
-    axios.get(`${this.$server}/api/aircraft`).then(response => {
-      this.aircraft = response.data;
-    });
-  }
-});
+// new Vue({
+//   created() {
+//     console.log('PiAware server is at', this.$server);
+//   },
+//   el: '#aircraft',
+//   data: {
+//     aircraft: null
+//   },
+//   formatCompass(heading) {
+//     let headingStr = Math.round(heading).toString();
+//     for (let i = headingStr.length; i < 3; i++) {
+//       headingStr = '0' + headingStr;
+//     }
+//     console.log(heading, headingStr);
+//     return headingStr;
+//   },
+//   mounted() {
+//     axios.get(`${this.$server}/api/aircraft`).then(response => {
+//       this.aircraft = response.data;
+//     });
+//   }
+// });
