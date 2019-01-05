@@ -113,13 +113,12 @@
         plugin: 'adsb', // board type
         container: $('#board'), // where to put the board
         template: $('#row_template'), // template markup
-        numRows: 2, // number of rows
+        numRows: 3, // number of rows
 
         // OPTIONAL
-        maxResults: 3, // number of items to retrieve from service
+        maxResults: 5, // number of items to retrieve from service
         sort: 'location-str',
         order: 'asc',
-        refreshInterval: 20000, // how often to refresh the display (ms)
         pageInterval: 10000, // delay between pages (ms)
         stagger: 1500, // delay between loading rows (ms)
         pageReloadAt: 120 // number of refreshes before clearing & reloading window

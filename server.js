@@ -101,8 +101,8 @@ function addAirlineAndFlight(aircraft) {
   for (let i = 0; i < aircraft.length; i++) {
     let a = aircraft[i];
     if (a.flight) {
-      let identifier = a.flight.match(/\D+/)[0];
-      let flight_num = a.flight.match(/\d+/)[0];
+      let identifier = a.flight.match(/\D+/) ? a.flight.match(/\D+/)[0] : '';
+      let flight_num = a.flight.match(/\d+/) ? a.flight.match(/\d+/)[0] : '';
       if (identifier && identifier.length === 3) {
         a.airline = identifier;
         a['flight-num'] = flight_num;

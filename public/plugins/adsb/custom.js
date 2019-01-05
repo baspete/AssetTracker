@@ -1,6 +1,7 @@
+/* global sf */
 sf.display.ImageDrum = function() {
   return [
-    'none',
+    ' ',
     'AFL',
     'AAL',
     'BAW',
@@ -19,7 +20,7 @@ sf.plugins.adsb = {
 
   url: options => {
     const server = 'http://localhost:9000'; // TODO: fix this
-    return `${server}/api/aircraft?n=${options.maxResults}`;
+    return `${server}/api/aircraft?n=${options.maxResults || options.numRows}`;
   },
 
   getAltitudeString: (alt, change) => {
@@ -46,7 +47,7 @@ sf.plugins.adsb = {
       let aircraft = response[i];
 
       if (!aircraft['airline']) {
-        aircraft['airline'] = 'none';
+        aircraft['airline'] = ' ';
       }
 
       aircraft['location-str'] = `${sf.plugins.adsb.getDistanceString(

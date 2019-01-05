@@ -1,4 +1,7 @@
-﻿// Home Sweet Global Namespace
+﻿/* eslint-disable no-console */
+/* global $ _ Backbone */
+
+// Home Sweet Global Namespace
 var sf = {};
 
 // Namespace for objects defined and used locally in templates
@@ -21,45 +24,6 @@ Array.prototype.rotate = (() => {
     return this;
   };
 })();
-
-sf.util = {
-  // Function splits string into array of substrings of len or less.
-  // Splits happen at the last space.
-  splitString: (str, len) => {
-    let arr = [];
-    const words = str.split(' ');
-    const line = words[0];
-    for (let i = 1; i < words.length; i++) {
-      if (line.length + words[i].length + 1 < len + 1) {
-        line = line + ' ' + words[i];
-      } else {
-        arr.push(line);
-        line = words[i];
-      }
-    }
-    // push the last line into the array
-    arr.push(line);
-    return arr;
-  },
-
-  // Methods for getting query parameters out of the URL
-  getUrlParams: () => {
-    var vars = [],
-      param;
-    var params = window.location.href
-      .slice(
-        window.location.href.indexOf('?') + 1,
-        window.location.href.indexOf('#')
-      )
-      .split('&');
-    for (let i = 0; i < params.length; i++) {
-      param = params[i].split('=');
-      vars.push(param[0]);
-      vars[param[0]] = param[1];
-    }
-    return vars;
-  }
-};
 
 /* ********************************************************************* */
 /* BACKBONE COLLECTIONS, MODELS AND VIEWS                                */
@@ -93,11 +57,10 @@ sf.board = {
   // It goes through every group in every row,
   // calling loadGroup() with an empty string.
   // When it gets to the last row it reloads the page.
-  // NOTE: Use this to avoid memory leaks -- call it every hour or so.
-  // BETTER NOTE: Or, just don't cause memory leaks...
-  clear: container => {
+  clear: () => {
     console.log('clear container');
-    stagger = sf.options.stagger ? sf.options.stagger : 1000;
+    const stagger = sf.options.stagger ? sf.options.stagger : 1000;
+    const rows = sf.options.container.find('.row');
     let i = 0;
     const loop = function() {
       setTimeout(function() {
@@ -131,15 +94,16 @@ sf.board = {
 // at options.pageInterval.
 sf.Items = Backbone.Collection.extend({
   update: function(options) {
+    console.log('Fetching Data', items.url);
     this.fetch({
       success: function(response) {
         const results = response.toJSON(),
-          maxResults = options.maxResults ? options.maxResults : 24,
+          numRows = options.numRows,
+          maxResults = options.maxResults || options.numRows,
           numResults =
             results.length <= maxResults ? results.length : maxResults,
-          numRows = options.numRows,
           numPages = Math.ceil(numResults / numRows),
-          pageInterval = options.pageInterval ? options.pageInterval : 30000;
+          pageInterval = options.pageInterval || 30000;
 
         let i = 0,
           page = 0;
@@ -152,8 +116,10 @@ sf.Items = Backbone.Collection.extend({
         i += numRows;
         page++;
         // This recursive function loops through the results by page
-        loop = function() {
-          setTimeout(function() {
+        // After it's finished the last page it updates the items
+        // and renders a new page.
+        function paginate() {
+          setTimeout(() => {
             sf.display.loadSequentially(
               results.slice(i, i + numRows),
               options.container
@@ -161,11 +127,23 @@ sf.Items = Backbone.Collection.extend({
             i += numRows;
             page++;
             if (page < numPages) {
-              loop(i);
+              paginate(i);
+            } else {
+              setTimeout(() => {
+                items.update(options);
+              }, pageInterval);
             }
           }, pageInterval);
-        };
-        loop();
+        }
+
+        // Paginate if necessary
+        if (page < numPages) {
+          paginate();
+        } else {
+          setTimeout(() => {
+            items.update(options);
+          }, pageInterval);
+        }
       }
     });
   },
@@ -203,26 +181,9 @@ sf.Items = Backbone.Collection.extend({
     }
   },
 
+  // Get the initial data and load the chart
   load: options => {
-    // Set a count to keep track of how many times the page has been refreshed.
-    // When count has reached options.pageReloadAt, clear the board and reload the window.
-    let count = 1;
-    const pageReloadAt = options.pageReloadAt ? options.pageReloadAt : 120;
-
-    // Get the initial data and load the chart
     items.update(options);
-
-    // If user has specified a refresh interval, setInterval()
-    if (options.refreshInterval) {
-      setInterval(() => {
-        if (count < pageReloadAt) {
-          items.update(options);
-          count = count + 1;
-        } else {
-          sf.board.clear(options.container);
-        }
-      }, options.refreshInterval);
-    }
   }
 }),
 /* ********************************************************************* */
@@ -444,6 +405,10 @@ sf.Items = Backbone.Collection.extend({
     let values = container.data('order');
     // how many times do we need to increment the drum?
     let index = values.indexOf(c);
+    // set it to blank if character is missing from drum
+    if (index === -1) {
+      index = values.indexOf(' ');
+    }
     // increment the drum
     for (let i = 0; i < index; i++) {
       sf.display.show(container, values[i + 1], isChar);
