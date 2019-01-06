@@ -53,12 +53,12 @@ sf.board = {
     board.render();
   },
 
-  // Utility method to clear the board.
+  // Utility method to reset the board.
   // It goes through every group in every row,
   // calling loadGroup() with an empty string.
   // When it gets to the last row it reloads the page.
-  clear: () => {
-    console.log('clear container');
+  reset: () => {
+    console.log('Resetting Board');
     const stagger = sf.options.stagger ? sf.options.stagger : 1000;
     const rows = sf.options.container.find('.row');
     let i = 0;
@@ -339,15 +339,22 @@ sf.Items = Backbone.Collection.extend({
      * @param {object} row A JQuery DOM object representing a row
      */
   loadRow: (data, row) => {
-    // load the keys array into the .[key] groups
-    for (let key in data) {
-      let group = row.find(`.${key}`);
-      if (group.length > 0 && data[key]) {
-        sf.display.loadGroup(data[key].toString(), group);
-        // put that value into that group's data store
-        group.data('contents', data[key]);
-      }
-    }
+    // Find all the available groups in this row
+    const groups = row.find('.group');
+    groups.each(group => {
+      // Get the data class name for this group
+      // This *should* always be the second class.
+      // If there's no data for this group use an empty
+      // string so we replace what was there before.
+      const c = $(groups[group])
+        .attr('class')
+        .split(/\s+/)[1];
+      const d = data[c] ? data[c] : '';
+      // Load this group for display
+      sf.display.loadGroup(d.toString(), $(groups[group]));
+      // Put that value into the group's data store
+      $(groups[group]).data('contents', d);
+    });
   },
 
   /**

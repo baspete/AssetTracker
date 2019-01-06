@@ -2,16 +2,21 @@
 sf.display.ImageDrum = function() {
   return [
     ' ',
-    'AFL',
+    'SWA',
     'AAL',
     'BAW',
     'DAL',
     'UAE',
     'KLM',
     'DLH',
-    'RYR',
+    'ASA',
     'UAL',
-    'AWE'
+    'FDX',
+    'PXM',
+    'SKW',
+    'JBU',
+    'ACA',
+    'QXE'
   ];
 };
 
@@ -56,7 +61,7 @@ sf.plugins.adsb = {
 
       aircraft['altitude-str'] = sf.plugins.adsb.getAltitudeString(
         aircraft['alt_geom'],
-        aircraft['baro_rate']
+        aircraft['baro_rate'] || aircraft['geom_rate']
       );
 
       aircraft['airspeed-str'] = aircraft.gs
