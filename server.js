@@ -7,6 +7,11 @@ const express = require('express'),
 // URL for PiAware Server
 const host = process.env.PIAWAREHOST || 'http://192.168.1.5';
 
+// FlightAware API Info
+const FLIGHTAWARE_USERNAME = process.env.FLIGHTAWARE_USERNAME;
+const FLIGHTAWARE_API_KEY = process.env.FLIGHTAWARE_API_KEY;
+const FLIGHTAWARE_URL = 'http://flightxml.flightaware.com/json/FlightXML2/';
+
 // Start with KOAK as a location, we'll switch this to the
 // receiver's location when we initialize the app
 let location = {
@@ -83,7 +88,7 @@ function addDistanceAndBearing(aircraft) {
     const bearing = (Math.degrees(Math.atan2(y, x)) + 360) % 360;
 
     // add distance & bearing properties to the aircraft data
-    aircraft[i].distance = distance;
+    aircraft[i].distance = parseFloat(distance.toFixed(1));
     aircraft[i].bearing = Math.round(bearing)
       .toString()
       .padStart(3, '0');
@@ -101,8 +106,8 @@ function addAirlineAndFlight(aircraft) {
   for (let i = 0; i < aircraft.length; i++) {
     let a = aircraft[i];
     if (a.flight) {
-      let identifier = a.flight.match(/\D+/) ? a.flight.match(/\D+/)[0] : '';
-      let flight_num = a.flight.match(/\d+/) ? a.flight.match(/\d+/)[0] : '';
+      let identifier = a.flight.match(/\D+/) ? a.flight.match(/\D+/)[0] : null;
+      let flight_num = a.flight.match(/\d+/) ? a.flight.match(/\d+/)[0] : null;
       if (identifier && identifier.length === 3) {
         a.airline = identifier;
         a['flight-num'] = flight_num;
@@ -183,6 +188,29 @@ function getAircraft(req, res) {
     });
 }
 
+function getFlightData(req, res) {
+  const method = 'FlightInfoEx';
+  return axios
+    .get(`${FLIGHTAWARE_URL}${method}`, {
+      auth: {
+        username: FLIGHTAWARE_USERNAME,
+        password: FLIGHTAWARE_API_KEY
+      },
+      params: {
+        ident: req.params.id,
+        howMany: 1
+      }
+    })
+    .then(response => {
+      console.log('success', response);
+      res.json(response.data);
+    })
+    .catch(error => {
+      console.log('error', error);
+      res.send('Error Getting Aircraft Data ' + error);
+    });
+}
+
 // ========================================================================
 // API ENDPOINTS
 
@@ -198,6 +226,10 @@ app.use(function(req, res, next) {
 
 app.use('/api/status', (req, res) => {
   getServerStatus(req, res);
+});
+
+app.use('/api/aircraft/:id', (req, res) => {
+  getFlightData(req, res);
 });
 
 app.use('/api/aircraft', (req, res) => {

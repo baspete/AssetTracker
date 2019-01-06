@@ -32,15 +32,19 @@ sf.plugins.adsb = {
   },
 
   getAltitudeString: (alt, change) => {
-    let c = ' ';
-    if (Math.abs(change) > 100 && alt > 0) {
-      if (change > 0) {
-        c = '↑';
-      } else if (change < 0) {
-        c = '↓';
+    if (alt > 0) {
+      let c = ' ';
+      if (Math.abs(change) > 100 && alt > 0) {
+        if (change > 0) {
+          c = '↑';
+        } else if (change < 0) {
+          c = '↓';
+        }
       }
+      return `${alt.toString().padStart(5, ' ')}${c}`;
+    } else {
+      return 'ground';
     }
-    return `${alt.toString().padStart(5, ' ')}${c}`;
   },
 
   getDistanceString: distance => {
