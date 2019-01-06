@@ -239,14 +239,7 @@ app.use('/api/aircraft', (req, res) => {
 // ========================================================================
 // WEB APP
 
-// Built files are in 'dist'
-app.use('/dist', express.static('dist'));
-
-// Use res.sendFile() to ensure this is the only file
-// we serve from the root directory
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});
+app.use('/', express.static('public'));
 
 // ========================================================================
 // INIT
