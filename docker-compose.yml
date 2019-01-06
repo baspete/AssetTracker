@@ -1,8 +1,0 @@
-version: '2'
-services:
-  dash:
-    build: ./balena-dash
-  data:
-    build: ./server
-    expose:
-      - '80'
