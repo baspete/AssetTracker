@@ -16,7 +16,10 @@ sf.display.ImageDrum = function() {
     'SKW',
     'JBU',
     'ACA',
-    'QXE'
+    'QXE',
+    'NKS',
+    'VIR',
+    'LXJ'
   ];
 };
 
