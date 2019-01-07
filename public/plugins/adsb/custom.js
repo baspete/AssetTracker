@@ -27,8 +27,7 @@ sf.plugins.adsb = {
   dataType: 'json',
 
   url: options => {
-    const server = 'http://192.168.1.70:9000'; // TODO: fix this
-    return `${server}/api/aircraft?n=${options.maxResults || options.numRows}`;
+    return `/api/aircraft?n=${options.maxResults || options.numRows}`;
   },
 
   getAltitudeString: (alt, change) => {
