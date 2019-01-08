@@ -1,3 +1,7 @@
+.splitflap {
+  width: 1920px; /* HDTV display */
+}
+
 /* AIRLINE LOGOS DRUM */
 .splitflap .image {
   float: left;

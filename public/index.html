@@ -81,6 +81,10 @@
           <div class="full"><span></span></div>
           <div class="full"><span></span></div>
         </div>
+        <div class="group status"> <!-- lights -->
+          <div class="sA"></div>
+          <div class="sB"></div>
+        </div>
       </div>
     </script>
     <!-- END ROW TEMPLATE -->
@@ -106,11 +110,11 @@
         numRows: 12, // number of rows
 
         // OPTIONAL
-        // maxResults: 24, // number of items to retrieve from service
+        maxResults: 24, // number of items to retrieve from service
         sort: 'location-str',
         order: 'asc',
         pageInterval: 30000, // delay between pages (ms)
-        stagger: 1500 // delay between loading rows (ms)
+        stagger: 2000 // delay between loading rows (ms)
       };
 
       $(document).ready(function() {
