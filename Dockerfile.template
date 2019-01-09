@@ -3,7 +3,7 @@
 # see more about dockerfile templates here: https://www.balena.io/docs/learn/develop/dockerfile/#dockerfile-templates
 # and about resin base images here: https://www.balena.io/docs/reference/base-images/base-images/
 # Note the node:slim image doesn't have node-gyp
-FROM resin/%%RESIN_MACHINE_NAME%%-node
+FROM resin/%%RESIN_MACHINE_NAME%%-node:10.10
 
 # use apt-get if you need to install dependencies,
 # for instance if you need ALSA sound utils, just uncomment the lines below.
