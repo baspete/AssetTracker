@@ -6,6 +6,10 @@
   "license": "MIT",
   "private": true,
   "main": "server.js",
+  "scripts": {
+    "stop": "pm2 delete FlightTracker",
+    "start": "pm2 start server.js --watch --name FlightTracker"
+  },
   "dependencies": {
     "axios": "^0.18.0",
     "express": "^4.16.4"
