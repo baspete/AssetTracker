@@ -181,6 +181,7 @@ function getAircraft(req, res) {
     .get(`${host}/dump1090-fa/data/aircraft.json`)
     .then(response => {
       let aircraft = filter(response.data.aircraft, req.query.n);
+      console.log(`Retrieved ${aircraft.length} Aircraft`);
       res.json(aircraft);
     })
     .catch(error => {
@@ -248,6 +249,7 @@ getReceiverInfo()
   .then(results => {
     location.lat = results.lat;
     location.lon = results.lon;
+    console.log('Receiver address', host);
     console.log('Receiver location is', location.lat, location.lon);
   })
   .catch(error => {
