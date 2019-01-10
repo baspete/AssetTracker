@@ -12,7 +12,7 @@ sf.display.ImageDrum = function() {
     'ASA',
     'UAL',
     'FDX',
-    'PXM',
+    'PCM',
     'SKW',
     'JBU',
     'ACA',
