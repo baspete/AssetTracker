@@ -106,12 +106,15 @@ function db(aircraft) {
     if (!db[a.hex]) {
       console.log(`${a.hex} not found. Adding to DB: ${JSON.stringify(a)}`);
       db[a.hex] = a;
+      db[a.hex]['status'] = 'A';
     } else {
-      if (!db[a.hex]['flight'] && a['flight']) {
-        console.log(`${a.hex} is missing flight, adding ${a['flight']}`);
-        db[a.hex]['flight'] = a['flight'];
+      db[a.hex]['status'] = 'C';
+      for (let param in a) {
+        if (!db[a.hex][param] && a[param]) {
+          console.log(`${a.hex} is missing ${param}, adding ${a[param]}`);
+          db[a.hex][param] = a[param];
+        }
       }
-      console;
     }
     updatedAircraft.push(db[a.hex]);
   }
@@ -147,7 +150,7 @@ function addAirlineAndFlight(aircraft) {
 function filter(aircraft, maxResults) {
   // Only return aircraft lat/lon/alt
   let filtered = aircraft.filter(a => {
-    return a.lat && a.lon && typeof a.alt_geom === 'number';
+    return a.seen < 60 && a.lat && a.lon && typeof a.alt_geom === 'number';
   });
   // Add distance an bearing properties
   filtered = addDistanceAndBearing(filtered);

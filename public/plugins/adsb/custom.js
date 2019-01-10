@@ -43,7 +43,7 @@ sf.plugins.adsb = {
       }
       return `${alt.toString().padStart(5, ' ')}${c}`;
     } else {
-      return 'ground';
+      return '    0 ';
     }
   },
 
@@ -72,9 +72,11 @@ sf.plugins.adsb = {
       );
 
       aircraft['airspeed-str'] = aircraft.gs
-        .toFixed(0)
-        .toString()
-        .padStart(3, ' ');
+        ? aircraft.gs
+          .toFixed(0)
+          .toString()
+          .padStart(3, ' ')
+        : '';
     }
     return response;
   }
