@@ -19,6 +19,8 @@ let location = {
   lon: -122.2211389
 };
 
+let icao = {};
+
 // ========================================================================
 // PRIVATE METHODS
 
@@ -95,6 +97,25 @@ function addDistanceAndBearing(aircraft) {
     aircraft[i].compass = getCompassPoints(bearing);
   }
   return aircraft;
+}
+
+function db(aircraft) {
+  let updatedAircraft = [];
+  for (let i = 0; i < aircraft.length; i++) {
+    let a = aircraft[i];
+    if (!db[a.hex]) {
+      console.log(`${a.hex} not found. Adding to DB: ${JSON.stringify(a)}`);
+      db[a.hex] = a;
+    } else {
+      if (!db[a.hex]['flight'] && a['flight']) {
+        console.log(`${a.hex} is missing flight, adding ${a['flight']}`);
+        db[a.hex]['flight'] = a['flight'];
+      }
+      console;
+    }
+    updatedAircraft.push(db[a.hex]);
+  }
+  return updatedAircraft;
 }
 
 /**
@@ -180,7 +201,7 @@ function getAircraft(req, res) {
   return axios
     .get(`${host}/dump1090-fa/data/aircraft.json`)
     .then(response => {
-      let aircraft = filter(response.data.aircraft, req.query.n);
+      let aircraft = filter(db(response.data.aircraft), req.query.n);
       console.log(`Retrieved ${aircraft.length} Aircraft`);
       res.json(aircraft);
     })
