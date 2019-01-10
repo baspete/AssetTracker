@@ -98,11 +98,14 @@ sf.board = {
 sf.Items = Backbone.Collection.extend({
   update: function(options) {
     const resetAfter = options.resetAfter ? options.resetAfter : 120;
-    console.log('count', sf.board.loadCount);
-    if (sf.board.loadCount === options.resetAfter) {
+    if (sf.board.loadCount > options.resetAfter) {
       sf.board.reset();
     } else {
-      console.log('Fetching Data', items.url);
+      console.log(
+        `Load Count: ${
+          sf.board.loadCount
+        } of ${resetAfter} Fetching Data From ${items.url}`
+      );
       this.fetch({
         success: function(response) {
           const results = response.toJSON(),
