@@ -150,7 +150,7 @@ function addAirlineAndFlight(aircraft) {
 function filter(aircraft, maxResults) {
   // Only return aircraft lat/lon/alt
   let filtered = aircraft.filter(a => {
-    return a.seen < 60 && a.lat && a.lon && typeof a.alt_geom === 'number';
+    return a.seen < 20 && a.lat && a.lon && typeof a.alt_geom === 'number';
   });
   // Add distance an bearing properties
   filtered = addDistanceAndBearing(filtered);
