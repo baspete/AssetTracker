@@ -34,7 +34,7 @@ Math.degrees = function(radians) {
   return (radians * 180) / Math.PI;
 };
 
-function getCompassPoints(degrees) {
+function getCardinalPoints(degrees) {
   if (typeof degrees !== 'number') {
     return degrees.toString();
   } else {
@@ -94,7 +94,14 @@ function addDistanceAndBearing(aircraft) {
     aircraft[i].bearing = Math.round(bearing)
       .toString()
       .padStart(3, '0');
-    aircraft[i].compass = getCompassPoints(bearing);
+    aircraft[i]['cardinal-bearing'] = getCardinalPoints(bearing);
+  }
+  return aircraft;
+}
+
+function addCardinalTrack(aircraft) {
+  for (let i = 0; i < aircraft.length; i++) {
+    aircraft[i]['cardinal-track'] = getCardinalPoints(aircraft[i].track);
   }
   return aircraft;
 }
@@ -154,8 +161,10 @@ function filter(aircraft, maxResults) {
   let filtered = aircraft.filter(a => {
     return a.lat && a.lon && typeof a.alt_geom === 'number';
   });
-  // Add distance an bearing properties
+  // Add distance and bearing properties
   filtered = addDistanceAndBearing(filtered);
+  // Add cardinal track property
+  filtered = addCardinalTrack(filtered);
   // Add airline and flight number fields
   filtered = addAirlineAndFlight(filtered);
   // Sort by distance
