@@ -99,26 +99,28 @@ function addDistanceAndBearing(aircraft) {
   return aircraft;
 }
 
+/**
+ * This function sets up a map of icao values to flight strings.
+ * If an aircraft in the array doesn't have a flight string it checks
+ * the map to see if it had one in the past.
+ * If no flight string is present in either place it adds the icao
+ * value to the remarks string.
+ * @param {array} aircraft
+ */
 function db(aircraft) {
   let updatedAircraft = [];
   for (let i = 0; i < aircraft.length; i++) {
     let a = aircraft[i];
     if (!db[a.hex]) {
-      console.log(`${a.hex} not found. Adding to DB: ${JSON.stringify(a)}`);
-      db[a.hex] = a;
-      db[a.hex]['status'] = 'A';
-    } else {
-      db[a.hex]['status'] = 'C';
-      for (let param in a) {
-        if (!db[a.hex][param] && a[param]) {
-          console.log(`${a.hex} is missing ${param}, adding ${a[param]}`);
-          db[a.hex][param] = a[param];
-        }
-      }
+      // add new aircraft to the db
+      db[a.hex] = {
+        flight: a['flight'] || '---'
+      };
     }
-    updatedAircraft.push(db[a.hex]);
+    a['flight'] = a['flight'] || db[a.hex]['flight'];
+    a['remarks'] = a['flight'] === '---' ? `icao: ${a['hex']}` : '';
   }
-  return updatedAircraft;
+  return aircraft;
 }
 
 /**
@@ -148,9 +150,9 @@ function addAirlineAndFlight(aircraft) {
  * @param {number} maxResults The maximum number of results to return
  */
 function filter(aircraft, maxResults) {
-  // Only return aircraft lat/lon/alt
+  // Only return aircraft with lat/lon/alt
   let filtered = aircraft.filter(a => {
-    return a.seen < 20 && a.lat && a.lon && typeof a.alt_geom === 'number';
+    return a.lat && a.lon && typeof a.alt_geom === 'number';
   });
   // Add distance an bearing properties
   filtered = addDistanceAndBearing(filtered);

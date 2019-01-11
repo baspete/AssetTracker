@@ -62,6 +62,8 @@ sf.plugins.adsb = {
         aircraft['airline'] = ' ';
       }
 
+      aircraft['track-str'] = aircraft['track'].toFixed(0).padStart(3, '0');
+
       aircraft['location-str'] = `${sf.plugins.adsb.getDistanceString(
         aircraft['distance']
       )}${aircraft['compass']}`;
