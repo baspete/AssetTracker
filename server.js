@@ -66,9 +66,12 @@ function getCardinalPoints(degrees) {
  * https://www.movable-type.co.uk/scripts/latlong.html
  *
  * @param {array} aircraft An aircraft object from dump1090-fa/data/aircraft.json
+ * @param {!object} offset Optional location offset
  * @returns {array} The same list with additional "distance", "bearing" and "compass" properties
  */
-function addDistanceAndBearing(aircraft) {
+function addDistanceAndBearing(aircraft, offset) {
+  // If we've got an offset, use that.
+  location = offset ? offset : location;
   for (let i = 0; i < aircraft.length; i++) {
     const φ1 = Math.radians(location.lat);
     const φ2 = Math.radians(aircraft[i].lat);
@@ -156,13 +159,13 @@ function addAirlineAndFlight(aircraft) {
  * @param {array}  aircraft An array of aircraft returned by dump1090-fa/data/aircraft.json
  * @param {number} maxResults The maximum number of results to return
  */
-function filter(aircraft, maxResults) {
+function filter(aircraft, maxResults, offset) {
   // Only return aircraft with lat/lon/alt
   let filtered = aircraft.filter(a => {
     return a.lat && a.lon && typeof a.alt_geom === 'number';
   });
   // Add distance and bearing properties
-  filtered = addDistanceAndBearing(filtered);
+  filtered = addDistanceAndBearing(filtered, offset);
   // Add cardinal track property
   filtered = addCardinalTrack(filtered);
   // Add airline and flight number fields
@@ -215,7 +218,14 @@ function getAircraft(req, res) {
   return axios
     .get(`${host}/dump1090-fa/data/aircraft.json`)
     .then(response => {
-      let aircraft = filter(db(response.data.aircraft), req.query.n);
+      const offset =
+        req.query.lat && req.query.lon
+          ? {
+            lat: req.query.lat,
+            lon: req.query.lon
+          }
+          : null;
+      let aircraft = filter(db(response.data.aircraft), req.query.n, offset);
       console.log(`Retrieved ${aircraft.length} Aircraft`);
       res.json(aircraft);
     })

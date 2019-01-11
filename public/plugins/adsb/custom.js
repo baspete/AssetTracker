@@ -28,7 +28,15 @@ sf.plugins.adsb = {
   dataType: 'json',
 
   url: options => {
-    return `/api/aircraft?n=${options.maxResults || options.numRows}`;
+    let str = `/api/aircraft?n=${options.maxResults || options.numRows}`;
+    // User can enter lat/lon for offset
+    const url = new URL(window.location.href),
+      lat = url.searchParams.get('lat'),
+      lon = url.searchParams.get('lon');
+    if (lat && lon) {
+      str += `&lat=${lat}&lon=${lon}`;
+    }
+    return str;
   },
 
   getAltitudeString: (alt, change) => {
