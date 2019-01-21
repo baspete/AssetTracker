@@ -53,6 +53,9 @@ sf.board = {
     board.render();
   },
 
+  // Keep track of how many times we've loaded this here
+  loadCount: 1,
+
   // Utility method to reset the board.
   // It goes through every group in every row,
   // calling loadGroup() with an empty string.
@@ -94,58 +97,68 @@ sf.board = {
 // at options.pageInterval.
 sf.Items = Backbone.Collection.extend({
   update: function(options) {
-    console.log('Fetching Data', items.url);
-    this.fetch({
-      success: function(response) {
-        const results = response.toJSON(),
-          numRows = options.numRows,
-          maxResults = options.maxResults || options.numRows,
-          numResults =
-            results.length <= maxResults ? results.length : maxResults,
-          numPages = Math.ceil(numResults / numRows),
-          pageInterval = options.pageInterval || 30000;
+    const resetAfter = options.resetAfter ? options.resetAfter : 120;
+    if (sf.board.loadCount > options.resetAfter) {
+      sf.board.reset();
+    } else {
+      console.log(
+        `Load Count: ${
+          sf.board.loadCount
+        } of ${resetAfter} Fetching Data From ${items.url}`
+      );
+      this.fetch({
+        success: function(response) {
+          const results = response.toJSON(),
+            numRows = options.numRows,
+            maxResults = options.maxResults || options.numRows,
+            numResults =
+              results.length <= maxResults ? results.length : maxResults,
+            numPages = Math.ceil(numResults / numRows),
+            pageInterval = options.pageInterval || 30000;
 
-        let i = 0,
-          page = 0;
+          let i = 0,
+            page = 0;
 
-        // Load initial results
-        sf.display.loadSequentially(
-          results.slice(i, i + numRows),
-          options.container
-        );
-        i += numRows;
-        page++;
-        // This recursive function loops through the results by page
-        // After it's finished the last page it updates the items
-        // and renders a new page.
-        function paginate() {
-          setTimeout(() => {
-            sf.display.loadSequentially(
-              results.slice(i, i + numRows),
-              options.container
-            );
-            i += numRows;
-            page++;
-            if (page < numPages) {
-              paginate(i);
-            } else {
-              setTimeout(() => {
-                items.update(options);
-              }, pageInterval);
-            }
-          }, pageInterval);
+          // Load initial results
+          sf.display.loadSequentially(
+            results.slice(i, i + numRows),
+            options.container
+          );
+          i += numRows;
+          page++;
+          sf.board.loadCount++;
+          // This recursive function loops through the results by page
+          // After it's finished the last page it updates the items
+          // and renders a new page.
+          function paginate() {
+            setTimeout(() => {
+              sf.display.loadSequentially(
+                results.slice(i, i + numRows),
+                options.container
+              );
+              i += numRows;
+              page++;
+              if (page < numPages) {
+                paginate(i);
+              } else {
+                setTimeout(() => {
+                  items.update(options);
+                }, pageInterval);
+              }
+            }, pageInterval);
+          }
+
+          // Paginate if necessary
+          if (page < numPages) {
+            paginate();
+          } else {
+            setTimeout(() => {
+              items.update(options);
+            }, pageInterval);
+          }
         }
-
-        // Paginate if necessary
-        if (page < numPages) {
-          paginate();
-        } else {
-          setTimeout(() => {
-            items.update(options);
-          }, pageInterval);
-        }
-      }
-    });
+      });
+    }
   },
   parse: function(json) {
     return sf.plugins[sf.options.plugin].formatData(json); // normalize this data

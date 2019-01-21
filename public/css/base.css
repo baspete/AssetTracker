@@ -11,7 +11,7 @@ a {
   width: 1400px;
   overflow: none;
   white-space: nowrap;
-  margin: 50px auto 0;
+  margin: 20px 10px;
 }
 .splitflap h1 {
   text-transform: uppercase;
@@ -51,10 +51,10 @@ a {
 .splitflap .status div.on {
   background-position: -18px 0;
 }
-.splitflap .status .s0 {
+.splitflap .status .sA {
   background: url('../img/lights_green.png') no-repeat;
 }
-.splitflap .status .s1 {
+.splitflap .status .sB {
   background: url('../img/lights_red.png') no-repeat;
 }
 .splitflap .full,

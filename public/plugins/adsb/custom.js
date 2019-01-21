@@ -12,7 +12,7 @@ sf.display.ImageDrum = function() {
     'ASA',
     'UAL',
     'FDX',
-    'PXM',
+    'PCM',
     'SKW',
     'JBU',
     'ACA',
@@ -28,7 +28,15 @@ sf.plugins.adsb = {
   dataType: 'json',
 
   url: options => {
-    return `/api/aircraft?n=${options.maxResults || options.numRows}`;
+    let str = `/api/aircraft?n=${options.maxResults || options.numRows}`;
+    // User can enter lat/lon for offset
+    const url = new URL(window.location.href),
+      lat = url.searchParams.get('lat'),
+      lon = url.searchParams.get('lon');
+    if (lat && lon) {
+      str += `&lat=${lat}&lon=${lon}`;
+    }
+    return str;
   },
 
   getAltitudeString: (alt, change) => {
@@ -43,7 +51,7 @@ sf.plugins.adsb = {
       }
       return `${alt.toString().padStart(5, ' ')}${c}`;
     } else {
-      return 'ground';
+      return '    0 ';
     }
   },
 
@@ -64,7 +72,7 @@ sf.plugins.adsb = {
 
       aircraft['location-str'] = `${sf.plugins.adsb.getDistanceString(
         aircraft['distance']
-      )}${aircraft['compass']}`;
+      )}${aircraft['cardinal-bearing']}`;
 
       aircraft['altitude-str'] = sf.plugins.adsb.getAltitudeString(
         aircraft['alt_geom'],
@@ -72,9 +80,11 @@ sf.plugins.adsb = {
       );
 
       aircraft['airspeed-str'] = aircraft.gs
-        .toFixed(0)
-        .toString()
-        .padStart(3, ' ');
+        ? aircraft.gs
+          .toFixed(0)
+          .toString()
+          .padStart(3, ' ')
+        : '';
     }
     return response;
   }

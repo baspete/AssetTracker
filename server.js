@@ -19,6 +19,8 @@ let location = {
   lon: -122.2211389
 };
 
+let icao = {};
+
 // ========================================================================
 // PRIVATE METHODS
 
@@ -32,7 +34,7 @@ Math.degrees = function(radians) {
   return (radians * 180) / Math.PI;
 };
 
-function getCompassPoints(degrees) {
+function getCardinalPoints(degrees) {
   if (typeof degrees !== 'number') {
     return degrees.toString();
   } else {
@@ -64,9 +66,12 @@ function getCompassPoints(degrees) {
  * https://www.movable-type.co.uk/scripts/latlong.html
  *
  * @param {array} aircraft An aircraft object from dump1090-fa/data/aircraft.json
+ * @param {!object} offset Optional location offset
  * @returns {array} The same list with additional "distance", "bearing" and "compass" properties
  */
-function addDistanceAndBearing(aircraft) {
+function addDistanceAndBearing(aircraft, offset) {
+  // If we've got an offset, use that.
+  location = offset ? offset : location;
   for (let i = 0; i < aircraft.length; i++) {
     const φ1 = Math.radians(location.lat);
     const φ2 = Math.radians(aircraft[i].lat);
@@ -92,7 +97,38 @@ function addDistanceAndBearing(aircraft) {
     aircraft[i].bearing = Math.round(bearing)
       .toString()
       .padStart(3, '0');
-    aircraft[i].compass = getCompassPoints(bearing);
+    aircraft[i]['cardinal-bearing'] = getCardinalPoints(bearing);
+  }
+  return aircraft;
+}
+
+function addCardinalTrack(aircraft) {
+  for (let i = 0; i < aircraft.length; i++) {
+    aircraft[i]['cardinal-track'] = getCardinalPoints(aircraft[i].track);
+  }
+  return aircraft;
+}
+
+/**
+ * This function sets up a map of icao values to flight strings.
+ * If an aircraft in the array doesn't have a flight string it checks
+ * the map to see if it had one in the past.
+ * If no flight string is present in either place it adds the icao
+ * value to the remarks string.
+ * @param {array} aircraft
+ */
+function db(aircraft) {
+  let updatedAircraft = [];
+  for (let i = 0; i < aircraft.length; i++) {
+    let a = aircraft[i];
+    if (!db[a.hex]) {
+      // add new aircraft to the db
+      db[a.hex] = {
+        flight: a['flight'] || '---'
+      };
+    }
+    a['flight'] = a['flight'] || db[a.hex]['flight'];
+    a['remarks'] = a['flight'] === '---' ? `icao: ${a['hex']}` : '';
   }
   return aircraft;
 }
@@ -123,13 +159,15 @@ function addAirlineAndFlight(aircraft) {
  * @param {array}  aircraft An array of aircraft returned by dump1090-fa/data/aircraft.json
  * @param {number} maxResults The maximum number of results to return
  */
-function filter(aircraft, maxResults) {
-  // Only return aircraft lat/lon/alt
+function filter(aircraft, maxResults, offset) {
+  // Only return aircraft with lat/lon/alt
   let filtered = aircraft.filter(a => {
     return a.lat && a.lon && typeof a.alt_geom === 'number';
   });
-  // Add distance an bearing properties
-  filtered = addDistanceAndBearing(filtered);
+  // Add distance and bearing properties
+  filtered = addDistanceAndBearing(filtered, offset);
+  // Add cardinal track property
+  filtered = addCardinalTrack(filtered);
   // Add airline and flight number fields
   filtered = addAirlineAndFlight(filtered);
   // Sort by distance
@@ -180,7 +218,15 @@ function getAircraft(req, res) {
   return axios
     .get(`${host}/dump1090-fa/data/aircraft.json`)
     .then(response => {
-      let aircraft = filter(response.data.aircraft, req.query.n);
+      const offset =
+        req.query.lat && req.query.lon
+          ? {
+            lat: req.query.lat,
+            lon: req.query.lon
+          }
+          : null;
+      let aircraft = filter(db(response.data.aircraft), req.query.n, offset);
+      console.log(`Retrieved ${aircraft.length} Aircraft`);
       res.json(aircraft);
     })
     .catch(error => {
@@ -248,6 +294,7 @@ getReceiverInfo()
   .then(results => {
     location.lat = results.lat;
     location.lon = results.lon;
+    console.log('Receiver address', host);
     console.log('Receiver location is', location.lat, location.lon);
   })
   .catch(error => {

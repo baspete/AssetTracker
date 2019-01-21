@@ -1,3 +1,8 @@
+.splitflap {
+  margin: 50px auto 0;
+  width: 1530px;
+}
+
 /* AIRLINE LOGOS DRUM */
 .splitflap .image {
   float: left;
@@ -51,7 +56,7 @@
 .splitflap .image span.FDX {
   background-position: 0px -440px;
 } /* fedex */
-.splitflap .image span.PXM {
+.splitflap .image span.PCM {
   background-position: 0px -480px;
 } /* westair (Fedex Short Haul) */
 .splitflap .image span.SKW {

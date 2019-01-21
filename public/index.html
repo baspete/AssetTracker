@@ -18,7 +18,8 @@
         Flight / Tail
       </div>
       <div class="header" style="width:180px;margin-left:30px;">Location</div>
-      <div class="header" style="width:180px;margin-left:30px;">Altitude</div>
+      <div class="header" style="width:180px;margin-left:35px;">Altitude</div>
+      <div class="header" style="width:60px;margin-left:30px;">Hdg</div>
       <div class="header" style="width:90px;margin-left:30px;">Speed</div>
       <div class="header" style="width:430px;margin-left:30px;">Remarks</div>
 
@@ -60,6 +61,10 @@
           <div class="number"><span></span></div>
           <div class="full"><span></span></div>
         </div>
+        <div class="group cardinal-track"> <!-- heading -->
+          <div class="full"><span></span></div>
+          <div class="full"><span></span></div>
+        </div>
         <div class="group airspeed-str"> <!-- airspeed -->
           <div class="number"><span></span></div>
           <div class="number"><span></span></div>
@@ -81,6 +86,10 @@
           <div class="full"><span></span></div>
           <div class="full"><span></span></div>
         </div>
+        <div class="group status"> <!-- lights -->
+          <div class="sA"></div>
+          <div class="sB"></div>
+        </div>
       </div>
     </script>
     <!-- END ROW TEMPLATE -->
@@ -98,17 +107,20 @@
     <script type="text/javascript" src="/plugins/adsb/custom.js"></script>
     <script type="text/javascript">
       // CUSTOMIZATION OPTIONS
+      // 37.841046,-122.1955648
+
       sf.options = {
         // REQUIRED
-        plugin: 'adsb', // board type
-        container: $('#board'), // where to put the board
-        template: $('#row_template'), // template markup
+        plugin: "adsb", // board type
+        container: $("#board"), // where to put the board
+        template: $("#row_template"), // template markup
         numRows: 12, // number of rows
 
         // OPTIONAL
         // maxResults: 24, // number of items to retrieve from service
-        sort: 'location-str',
-        order: 'asc',
+        resetAfter: 120,
+        sort: "location-str",
+        order: "asc",
         pageInterval: 60000, // delay between pages (ms)
         stagger: 3000 // delay between loading rows (ms)
       };
