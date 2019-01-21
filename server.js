@@ -1,22 +1,23 @@
 /* global require console process Promise module */
 
 const express = require("express"),
-  // parser = require("body-parser"),
+  parser = require("body-parser"),
   app = express();
 
 // ========================================================================
 // SETUP
 
 // parse application/x-www-form-urlencoded
-// app.use(parser.urlencoded({ extended: false }));
+app.use(parser.urlencoded({ extended: false }));
 // parse application/json
-// app.use(parser.json());
+app.use(parser.json());
 
 // ========================================================================
 // PRIVATE METHODS
 
 function events(req, res) {
-  res.json({ body: "hello world" });
+  console.log("received", req.body);
+  res.json({ body: req.body });
 }
 
 // ========================================================================

@@ -1,5 +1,5 @@
 {
-  "name": "Asset Tracker",
+  "name": "AssetTracker",
   "description": "A simple application website Particle.io and Firebase",
   "version": "1.0.0",
   "author": "Pete Butler <pete.butler@ge.com>",
@@ -11,9 +11,11 @@
     "start": "pm2 start server.js --watch --name AssetTracker"
   },
   "dependencies": {
+    "body-parser": "^1.18.3",
     "express": "^4.16.4"
   },
   "engines": {
-    "node": "latest"
-  }
+    "node": "8.x"
+  },
+  "repository": "https://github.com/baspete/AssetTracker.git"
 }
