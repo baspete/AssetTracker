@@ -35,7 +35,6 @@ admin.initializeApp({
     projectId: "basdesign-asset-tracker",
     clientEmail:
       "firebase-adminsdk-yqacy@basdesign-asset-tracker.iam.gserviceaccount.com",
-    privateKey:
     privateKey: process.env.FIREBASE_PRIVATE_KEY
   }),
   databaseURL: "https://basdesign-asset-tracker.firebaseio.com"
