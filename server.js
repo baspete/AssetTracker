@@ -97,7 +97,7 @@ function createEvent(req, res) {
 // ========================================================================
 // API ENDPOINTS
 
-app.post("/api/events", (req, res) => {
+app.put("/api/events", (req, res) => {
   createEvent(req, res);
 });
 
