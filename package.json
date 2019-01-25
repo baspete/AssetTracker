@@ -11,10 +11,14 @@
     "start": "pm2 start server.js --watch --name AssetTracker"
   },
   "dependencies": {
+    "@firebase/app": "^0.3.8",
+    "@firebase/app-types": "^0.3.3",
+    "@firebase/database": "^0.3.11",
     "@google-cloud/firestore": "^0.20.0",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
-    "firebase-admin": "^6.5.0"
+    "firebase-admin": "^6.5.0",
+    "grpc": "^1.18.0"
   },
   "engines": {
     "node": "10.x"

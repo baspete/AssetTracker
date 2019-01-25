@@ -3,10 +3,10 @@
 # see more about dockerfile templates here: https://www.balena.io/docs/learn/develop/dockerfile/#dockerfile-templates
 # and about resin base images here: https://www.balena.io/docs/reference/base-images/base-images/
 # Note the node:slim image doesn't have node-gyp
-FROM node:10-stretch
+FROM resin/%%RESIN_MACHINE_NAME%%-node
 
 # https://forums.balena.io/t/grpc-error-when-running-node-js-and-firebase/4835
-RUN apt-get update && apt-get -y install libstdc++6
+# RUN apt-get update && apt-get -y install libstdc++6
 
 # Defines our working directory in container
 WORKDIR /usr/src/app
