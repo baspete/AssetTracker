@@ -11,17 +11,21 @@ const firebase_private_key = process.env.FIREBASE_PRIVATE_KEY || '';
 // SETUP
 
 const params = [
+  // GPS
   'lat',
   'latitude',
   'lon',
   'longitude',
-  'x',
-  'y',
-  'z',
   'speed',
   'angle',
   'fixquality',
+  // BNO55
+  'x',
+  'y',
+  'z',
+  // MCP9808
   'temp1',
+  // Voltages
   'v1',
   'v2'
 ];
@@ -61,7 +65,7 @@ function formatFix(fix) {
 function saveFix(req, res) {
   const coreid = req.body['coreid'],
     doc = req.body['published_at'],
-    data = formatFix(req.body);
+    data = formatFix(req.body).data;
 
   db.collection(coreid)
     .doc(doc)
