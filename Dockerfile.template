@@ -11,6 +11,10 @@ WORKDIR /usr/src/app
 # Copies the package.json first for better cache on later pushes
 COPY package.json package.json
 
+RUN apt-get update && apt-get -y install libstdc++6
+RUN apt-get upgrade
+RUN apt-get dist-upgrade
+
 # This install npm dependencies on the balena build server,
 # making sure to clean up the artifacts it creates in order to reduce the image size.
 RUN npm install pm2 -g --no-optional
