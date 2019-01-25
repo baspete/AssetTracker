@@ -83,9 +83,11 @@ function saveFix(req, res) {
     .doc(doc)
     .set(data)
     .then(response => {
+      console.log('Success!', response);
       res.status(201).send(`Saved fix ${doc} for ${coreid}`);
     })
     .catch(error => {
+      console.log('SuccessError!', error);
       res.status(400).send(error);
     });
 }
