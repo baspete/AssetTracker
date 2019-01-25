@@ -87,7 +87,7 @@ function saveFix(req, res) {
       res.status(201).send(`Saved fix ${doc} for ${coreid}`);
     })
     .catch(error => {
-      console.log('SuccessError!', error);
+      console.log('Error!', error);
       res.status(400).send(error);
     });
 }
