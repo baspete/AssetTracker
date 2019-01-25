@@ -20,8 +20,5 @@
     "firebase-admin": "^6.5.0",
     "grpc": "^1.18.0"
   },
-  "engines": {
-    "node": "8.x"
-  },
   "repository": "https://github.com/baspete/AssetTracker.git"
 }
