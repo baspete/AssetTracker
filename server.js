@@ -12,22 +12,22 @@ const firebase_private_key = process.env.FIREBASE_PRIVATE_KEY || '';
 
 const params = [
   // GPS
-  'lat',
-  'latitude',
-  'lon',
-  'longitude',
-  'speed',
-  'angle',
-  'fixquality',
+  { name: 'lat', type: 'string' },
+  { name: 'latitude', type: 'float' },
+  { name: 'lon', type: 'string' },
+  { name: 'longitude', type: 'float' },
+  { name: 'speed', type: 'float' },
+  { name: 'angle', type: 'int' },
+  { name: 'fixquality', type: 'int' },
   // BNO55
-  'x',
-  'y',
-  'z',
+  { name: 'x', type: 'int' },
+  { name: 'y', type: 'int' },
+  { name: 'z', type: 'int' },
   // MCP9808
-  'temp1',
+  { name: 'temp1', type: 'float' },
   // Voltages
-  'v1',
-  'v2'
+  { name: 'v1', type: 'float' },
+  { name: 'v2', type: 'float' }
 ];
 
 // parse application/x-www-form-urlencoded
@@ -55,7 +55,17 @@ function formatFix(fix) {
   const data = fix.data.split(',');
   let newData = {};
   for (let i = 0; i < params.length; i++) {
-    newData[params[i]] = data[i];
+    switch (params[i].type) {
+    case 'int':
+      newData[params[i].name] = parseInt(data[i]);
+      break;
+    case 'float':
+      newData[params[i].name] = parseFloat(data[i]);
+      break;
+    default:
+      // just send a string
+      newData[params[i].name] = data[i];
+    }
   }
   newData['type'] = 'fix';
   fix.data = newData;
@@ -66,6 +76,8 @@ function saveFix(req, res) {
   const coreid = req.body['coreid'],
     doc = req.body['published_at'],
     data = formatFix(req.body).data;
+
+  console.log('Storing', JSON.stringify(data));
 
   db.collection(coreid)
     .doc(doc)
