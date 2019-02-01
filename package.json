@@ -11,14 +11,13 @@
     "start": "pm2 start server.js --watch --name AssetTracker"
   },
   "dependencies": {
-    "@firebase/app": "^0.3.8",
-    "@firebase/app-types": "^0.3.3",
-    "@firebase/database": "^0.3.11",
-    "@google-cloud/firestore": "^0.20.0",
+    "azure-storage": "^2.10.2",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
-    "firebase-admin": "^6.5.0",
-    "grpc": "^1.18.0"
+    "geomagnetism": "^0.1.0"
+  },
+  "engines": {
+    "node": "10.x"
   },
   "repository": "https://github.com/baspete/AssetTracker.git"
 }

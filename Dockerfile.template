@@ -5,10 +5,6 @@
 # Note the node:slim image doesn't have node-gyp
 FROM resin/%%RESIN_MACHINE_NAME%%-node:10-stretch
 
-# RUN apt-get update && apt-get -y install libstdc++6
-# RUN apt-get upgrade
-# RUN apt-get dist-upgrade
-
 # Defines our working directory in container
 WORKDIR /usr/src/app
 
