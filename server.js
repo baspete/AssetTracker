@@ -59,6 +59,52 @@ function round(value, precision) {
   return Math.round(value * multiplier) / multiplier;
 }
 
+function parseEntry(entry) {
+  let response = {};
+  for (let field in entry) {
+    if (
+      entry[field]._ &&
+      field !== 'PartitionKey' && // ignore
+      field !== 'RowKey' // ignore
+    ) {
+      switch (field) {
+      case 'Timestamp':
+        response[field] = entry[field]._; // string
+        break;
+      case 'x': // Heading
+        let decl = geomagnetism
+          .model()
+          .point([parseFloat(entry.lat._), parseFloat(entry.lon._)]).decl;
+        let m = Math.round(parseFloat(entry[field]._) + corrections.heading);
+        // Calculate true
+        let t = Math.round(m + decl);
+        response['heading'] = {
+          mag: m < 0 ? 360 + m : m,
+          true: t < 0 ? 360 + t : t
+        };
+        break;
+      case 'y': // Pitch
+        response['pitch'] = Math.round(
+          parseFloat(entry[field]._) + corrections.pitch
+        );
+        break;
+      case 'z': // Roll
+        response['roll'] = Math.round(
+          parseFloat(entry[field]._) + corrections.roll
+        );
+        break;
+      case 'velocity': // Knots
+        response['velocity'] = round(parseFloat(entry[field]._), 1);
+        break;
+      default:
+        // Otherwise just return the float
+        response[field] = parseFloat(entry[field]._);
+      }
+    }
+  }
+  return response;
+}
+
 /**
  * Runs a table query with specific page size and continuationToken
  * @param {TableQuery}             query             Query to execute
@@ -77,55 +123,8 @@ function getTelemetry(id, query, results, continuationToken, callback) {
         return callback(error);
       }
       response.entries.map(entry => {
-        let fix = {};
-
-        for (let field in entry) {
-          if (
-            entry[field]._ &&
-            field !== 'PartitionKey' && // ignore
-            field !== 'RowKey' // ignore
-          ) {
-            switch (field) {
-            case 'Timestamp':
-              fix[field] = entry[field]._; // string
-              break;
-            case 'x': // Heading
-              let decl = geomagnetism
-                .model()
-                .point([parseFloat(entry.lat._), parseFloat(entry.lon._)])
-                .decl;
-              let m = Math.round(
-                parseFloat(entry[field]._) + corrections.heading
-              );
-                // Calculate true
-              let t = Math.round(m + decl);
-              fix['heading'] = {
-                mag: m < 0 ? 360 + m : m,
-                true: t < 0 ? 360 + t : t
-              };
-              break;
-            case 'y': // Pitch
-              fix['pitch'] = Math.round(
-                parseFloat(entry[field]._) + corrections.pitch
-              );
-              break;
-            case 'z': // Roll
-              fix['roll'] = Math.round(
-                parseFloat(entry[field]._) + corrections.roll
-              );
-              break;
-            case 'velocity': // Knots
-              fix['velocity'] = round(parseFloat(entry[field]._), 1);
-              break;
-            default:
-              // Otherwise just return the float
-              fix[field] = parseFloat(entry[field]._);
-            }
-          }
-        }
-        results.push(fix);
+        results.push(parseEntry(entry));
       });
-
       if (response.continuationToken) {
         getTelemetry(query, results, result.continuationToken, callback);
       } else {
@@ -133,10 +132,6 @@ function getTelemetry(id, query, results, continuationToken, callback) {
       }
     }
   );
-}
-
-function formatQueryResponse(response) {
-  return response;
 }
 
 function formatFix(fix) {
@@ -155,7 +150,6 @@ function formatFix(fix) {
       newData[params[i].name] = data[i];
     }
   }
-  newData['type'] = 'fix';
   fix.data = newData;
   return fix;
 }
@@ -213,26 +207,7 @@ function createEvent(req, res) {
   }
 }
 
-function getTables(req, res) {
-  tableSvc.listTablesSegmented(null, (error, results) => {
-    if (!error) {
-      res.status(200).send(results.entries);
-    } else {
-      res.status(400).send(error);
-    }
-  });
-}
-
-function getAssetInfo(req, res) {
-  const query = new azure.TableQuery().top(1).where('PartitionKey eq ?', 'fix');
-  tableSvc.queryEntities(req.params.id, query, null, (error, result) => {
-    if (!error) {
-      res.status(200).send(formatQueryResponse(result));
-    } else {
-      res.status(404).send(error);
-    }
-  });
-}
+function getTables(req, res) {}
 
 // ========================================================================
 // API ENDPOINTS
@@ -272,7 +247,24 @@ app.use('/api/assets/:id/fixes', (req, res) => {
 });
 
 app.get('/api/assets/:id?', (req, res) => {
-  res.send(req.params.id);
+  if (req.params.id) {
+    const query = new azure.TableQuery()
+      .top(1)
+      .where('PartitionKey eq ?', 'fix');
+    tableSvc.queryEntities(req.params.id, query, null, (error, response) => {
+      if (!error) {
+        let last = parseEntry(response.entries[0]);
+        res.send({
+          id: req.params.id,
+          last: last
+        });
+      } else {
+        res.status(404).send(error);
+      }
+    });
+  } else {
+    getTables(req, res);
+  }
 });
 
 // ========================================================================
