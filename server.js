@@ -3,6 +3,7 @@
 const express = require('express'),
   azure = require('azure-storage'),
   parser = require('body-parser'),
+  moment = require('moment'),
   geomagnetism = require('geomagnetism'),
   app = express();
 
@@ -36,9 +37,9 @@ const params = [
 // along the axis of the boat.
 // TODO: this should come from somewhere else
 const corrections = {
-  heading: -90,
+  heading: 0,
   pitch: 0,
-  roll: -1
+  roll: 0
 };
 
 // parse application/x-www-form-urlencoded
@@ -248,15 +249,18 @@ app.use('/api/assets/:id/fixes', (req, res) => {
 
 app.get('/api/assets/:id?', (req, res) => {
   if (req.params.id) {
-    const query = new azure.TableQuery()
-      .top(1)
-      .where('PartitionKey eq ?', 'fix');
+    const now = moment()
+      .subtract(19, 'minutes')
+      .toISOString();
+    console.log('now', now);
+    const query = new azure.TableQuery().where(
+      `(PartitionKey eq 'fix') and (RowKey ge '${now}')`
+    );
     tableSvc.queryEntities(req.params.id, query, null, (error, response) => {
       if (!error) {
-        let last = parseEntry(response.entries[0]);
+        let last = parseEntry(response.entries[response.entries.length - 1]);
         res.send({
-          id: req.params.id,
-          last: last
+          current: last
         });
       } else {
         res.status(404).send(error);

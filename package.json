@@ -14,7 +14,8 @@
     "azure-storage": "^2.10.2",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
-    "geomagnetism": "^0.1.0"
+    "geomagnetism": "^0.1.0",
+    "moment": "^2.24.0"
   },
   "engines": {
     "node": "10.x"
