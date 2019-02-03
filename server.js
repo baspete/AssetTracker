@@ -5,6 +5,7 @@ const express = require('express'),
   parser = require('body-parser'),
   moment = require('moment'),
   geomagnetism = require('geomagnetism'),
+  geolib = require('geolib'),
   app = express();
 
 // Expecting AZURE_STORAGE_CONNECTION_STRING env variable to be set
@@ -60,8 +61,48 @@ function round(value, precision) {
   return Math.round(value * multiplier) / multiplier;
 }
 
+/**
+ * Given any number of degrees, positive or negative,
+ * this function will return that number's compass degrees.
+ * Example: -10 -> 350
+ *          375 -> 15
+ *          240 -> 240
+ * @param {number} val
+ */
+function normalizeToCompass(val) {
+  if (val > 360) {
+    val = val - 360;
+  }
+  if (val < 0) {
+    val = val + 360;
+  }
+  return val;
+}
+
+/**
+ * Converts latitude or longitude from the concatenated degrees/minutes format
+ * returned by the Adafruit GPS library to decimal latitude or longitude.
+ * @param {any} dms latitude or longitude with degrees and minutes concatenated
+ * @param {string} direction direction from meridium or equator, ie: 'N', 'E', etc
+ */
+function convertDMToDecimal(dms, direction) {
+  const s = direction === 'N' || direction === 'S' ? 2 : 3;
+  const c = direction === 'S' || direction === 'W' ? -1 : 1; // S or W are negative
+  const deg = Number(dms.toString().substring(0, s));
+  const min = Number(dms.toString().substring(s));
+  let dd = (deg + min / 60) * c;
+  return dd;
+}
+
 function parseEntry(entry) {
   let response = {};
+  // Calculate magnetic declination for this point
+  const decl = geomagnetism
+    .model()
+    .point([
+      convertDMToDecimal(entry.latitude._, entry.lat._),
+      convertDMToDecimal(entry.longitude._, entry.lon._)
+    ]).decl;
   for (let field in entry) {
     if (
       entry[field]._ &&
@@ -72,34 +113,46 @@ function parseEntry(entry) {
       case 'Timestamp':
         response[field] = entry[field]._; // string
         break;
-      case 'x': // Heading
-        let decl = geomagnetism
-          .model()
-          .point([parseFloat(entry.lat._), parseFloat(entry.lon._)]).decl;
-        let m = Math.round(parseFloat(entry[field]._) + corrections.heading);
-        // Calculate true
-        let t = Math.round(m + decl);
+      case 'latitude':
+        response[field] = convertDMToDecimal(entry[field]._, entry.lat._);
+        break;
+      case 'longitude':
+        response[field] = convertDMToDecimal(entry[field]._, entry.lon._);
+        break;
+      case 'x': {
+        const m = Math.round(
+          normalizeToCompass(entry[field]._ + corrections.heading)
+        );
+          // Calculate true
+        let t = Math.round(normalizeToCompass(m + decl));
         response['heading'] = {
-          mag: m < 0 ? 360 + m : m,
-          true: t < 0 ? 360 + t : t
+          mag: m,
+          true: t
         };
         break;
+      }
+      case 'angle': {
+        const t = Math.round(entry[field]._);
+        // Calculate magnetic
+        const m = Math.round(normalizeToCompass(t - decl));
+        response['angle'] = {
+          mag: m,
+          true: t
+        };
+        break;
+      }
       case 'y': // Pitch
-        response['pitch'] = Math.round(
-          parseFloat(entry[field]._) + corrections.pitch
-        );
+        response['pitch'] = Math.round(entry[field]._ + corrections.pitch);
         break;
       case 'z': // Roll
-        response['roll'] = Math.round(
-          parseFloat(entry[field]._) + corrections.roll
-        );
+        response['roll'] = Math.round(entry[field]._ + corrections.roll);
         break;
       case 'velocity': // Knots
-        response['velocity'] = round(parseFloat(entry[field]._), 1);
+        response['velocity'] = round(entry[field]._, 1);
         break;
       default:
-        // Otherwise just return the float
-        response[field] = parseFloat(entry[field]._);
+        // Otherwise just return the value
+        response[field] = entry[field]._;
       }
     }
   }
@@ -249,12 +302,11 @@ app.use('/api/assets/:id/fixes', (req, res) => {
 
 app.get('/api/assets/:id?', (req, res) => {
   if (req.params.id) {
-    const now = moment()
+    const recent = moment()
       .subtract(19, 'minutes')
       .toISOString();
-    console.log('now', now);
     const query = new azure.TableQuery().where(
-      `(PartitionKey eq 'fix') and (RowKey ge '${now}')`
+      `(PartitionKey eq 'fix') and (RowKey ge '${recent}')`
     );
     tableSvc.queryEntities(req.params.id, query, null, (error, response) => {
       if (!error) {
