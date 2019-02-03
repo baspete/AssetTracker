@@ -180,7 +180,7 @@ function getTelemetry(id, query, results, continuationToken, callback) {
         results.push(parseEntry(entry));
       });
       if (response.continuationToken) {
-        getTelemetry(query, results, result.continuationToken, callback);
+        getTelemetry(query, results, response.continuationToken, callback);
       } else {
         callback(results);
       }
@@ -208,66 +208,114 @@ function formatFix(fix) {
   return fix;
 }
 
-function saveFix(req, res) {
-  const coreid = req.body['coreid'],
-    timestamp = req.body['published_at'],
-    data = formatFix(req.body).data;
+function saveFix(req) {
+  return new Promise((resolve, reject) => {
+    const coreid = req.body['coreid'],
+      timestamp = req.body['published_at'],
+      data = formatFix(req.body).data;
 
-  tableSvc.createTableIfNotExists(
-    coreid.toString(),
-    (error, result, response) => {
+    tableSvc.createTableIfNotExists(coreid.toString(), error => {
       if (!error) {
         // Table exists or created
-        const entity = Object.assign(
+        const fix = Object.assign(
           {
             PartitionKey: 'fix',
             RowKey: timestamp
           },
           data
         );
-
-        console.log('Storing', JSON.stringify(entity));
-
+        console.log('Storing', JSON.stringify(fix));
         // Send it to Azure Table Storage
         tableSvc.insertOrReplaceEntity(
           coreid,
-          entity,
-          (error, result, response) => {
+          fix,
+          (error, _result, response) => {
             if (!error) {
-              res.status(201).send(response);
+              resolve(response);
             } else {
-              res.status(400).send(error);
+              reject(error);
             }
           }
         );
       } else {
-        res.status(400).send(error);
+        reject(error);
       }
-    }
-  );
+    });
+  });
 }
 
-function createEvent(req, res) {
-  if (req.body && req.body.event) {
-    switch (req.body.event) {
-    case 'fix':
-      saveFix(req, res);
-      break;
-    default:
-      res.status(400).send('Failed: Unknown event type');
+function createEvent(req) {
+  return new Promise((resolve, reject) => {
+    if (req.body && req.body.event) {
+      switch (req.body.event) {
+      case 'fix':
+        saveFix(req)
+          .then(results => {
+            resolve(results);
+          })
+          .catch(error => {
+            reject(error);
+          });
+        break;
+      default:
+        reject('Failed: Unknown event type');
+      }
+    } else {
+      reject('Failed: No data to process');
     }
-  } else {
-    res.status(400).send('Failed: No data to process');
-  }
+  });
 }
 
-function getTables(req, res) {}
+/**
+ * Given an asset ID this function retrieves the most recent
+ * fix for that asset.
+ * @param {string} id The id of the asset
+ */
+function getLastFix(id) {
+  return new Promise((resolve, reject) => {
+    const recent = moment()
+      .subtract(19, 'minutes')
+      .toISOString();
+    const query = new azure.TableQuery().where(
+      `(PartitionKey eq 'fix') and (RowKey ge '${recent}')`
+    );
+    tableSvc.queryEntities(id, query, null, (error, response) => {
+      if (!error) {
+        let fix = parseEntry(response.entries[response.entries.length - 1]);
+        resolve(fix);
+      } else {
+        reject(error);
+      }
+    });
+  });
+}
+
+/**
+ * Retrieve a list of tables
+ */
+function getTables() {
+  return new Promise((resolve, reject) => {
+    tableSvc.listTablesSegmented(null, (error, results) => {
+      if (!error) {
+        resolve(results.entries);
+      } else {
+        reject(error);
+      }
+    });
+  });
+}
 
 // ========================================================================
 // API ENDPOINTS
 
 app.put('/api/events', (req, res) => {
-  createEvent(req, res);
+  createEvent(req)
+    .then(response => {
+      res.status(201).send(response);
+    })
+    .catch(error => {
+      res.status(400).send(error);
+    });
 });
 
 app.use('/api/assets/:id/fixes', (req, res) => {
@@ -291,7 +339,6 @@ app.use('/api/assets/:id/fixes', (req, res) => {
   }
 
   getTelemetry(req.params.id, query, resultsArr, null, () => {
-    console.log(`/api/fixes returned ${resultsArr.length} items`);
     res.json({
       count: resultsArr.length,
       items: resultsArr
@@ -302,24 +349,21 @@ app.use('/api/assets/:id/fixes', (req, res) => {
 
 app.get('/api/assets/:id?', (req, res) => {
   if (req.params.id) {
-    const recent = moment()
-      .subtract(19, 'minutes')
-      .toISOString();
-    const query = new azure.TableQuery().where(
-      `(PartitionKey eq 'fix') and (RowKey ge '${recent}')`
-    );
-    tableSvc.queryEntities(req.params.id, query, null, (error, response) => {
-      if (!error) {
-        let last = parseEntry(response.entries[response.entries.length - 1]);
-        res.send({
-          current: last
-        });
-      } else {
-        res.status(404).send(error);
-      }
-    });
+    getLastFix(req.params.id)
+      .then(fix => {
+        res.status(200).send({ last: fix });
+      })
+      .catch(error => {
+        res.status(400).send(error);
+      });
   } else {
-    getTables(req, res);
+    getTables()
+      .then(results => {
+        res.status(200).send(results);
+      })
+      .catch(error => {
+        res.status(400).send(error);
+      });
   }
 });
 
