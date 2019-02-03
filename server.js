@@ -328,14 +328,13 @@ app.put('/api/events', (req, res) => {
 app.use('/api/assets/:id/fixes', (req, res) => {
   let query = '',
     resultsArr = [];
-  if (req.query.since) {
+  if (req.query.since || req.query.before) {
+    let beforeStr = req.query.before ? `(RowKey <= '${req.query.before}')` : '';
+    let sinceStr = req.query.since ? `(RowKey >= '${req.query.since}')` : '';
+    let andStr = req.query.before && req.query.since ? ' and ' : '';
     query = new azure.TableQuery()
       .select(query.fix)
-      .where('RowKey >= ?', req.query.since);
-  } else if (req.query.before) {
-    query = new azure.TableQuery()
-      .select(query.fix)
-      .where('RowKey <= ?', req.query.before);
+      .where(beforeStr + andStr + sinceStr);
   } else {
     const now = Date.now(),
       span = 1000 * 60 * 60 * 24, // 24 hours
@@ -344,7 +343,6 @@ app.use('/api/assets/:id/fixes', (req, res) => {
       .select(query.fix)
       .where('RowKey >= ?', since);
   }
-
   getTelemetry(req.params.id, query, resultsArr, null, () => {
     res.json({
       count: resultsArr.length,
