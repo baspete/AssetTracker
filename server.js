@@ -370,8 +370,15 @@ app.use('/api/assets/:id/fixes', (req, res) => {
       .where('RowKey >= ?', since);
   }
   getTelemetry(req.params.id, query, resultsArr, null, () => {
+    // Calculate total distance
+    let coords = [];
+    resultsArr.map(fix => {
+      coords.push({ latitude: fix.latitude, longitude: fix.longitude });
+    });
     res.json({
       count: resultsArr.length,
+      distance: geolib.convertUnit('sm', geolib.getPathLength(coords)), // sea miles (?!)
+      bounds: geolib.getBounds(coords),
       items: resultsArr
     });
     resultsArr = [];
