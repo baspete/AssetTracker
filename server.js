@@ -54,8 +54,9 @@ app.use(parser.json());
 
 /**
  * Rounds a number
- * @param {float} value     A number to round
+ * @param {number} value     A number to round
  * @param {int}   precision The number of decimal places to round
+ * @returns {number}
  */
 function round(value, precision) {
   var multiplier = Math.pow(10, precision || 0);
@@ -69,6 +70,7 @@ function round(value, precision) {
  *          375 -> 15
  *          240 -> 240
  * @param {number} val
+ * @returns {number}
  */
 function normalizeToCompass(val) {
   if (val > 360) {
@@ -98,7 +100,11 @@ function convertDMToDecimal(dms, direction) {
   return dd;
 }
 
-function parseEntry(entry) {
+/**
+ * Turns a database fix entry into something useful
+ * @param {object} entry
+ */
+function parseFix(entry) {
   let response = {};
   // Calculate magnetic declination for this point
   const decl = geomagnetism
@@ -183,7 +189,7 @@ function getTelemetry(id, query, results, continuationToken, callback) {
         return callback(error);
       }
       response.entries.map(entry => {
-        results.push(parseEntry(entry));
+        results.push(parseFix(entry));
       });
       if (response.continuationToken) {
         console.log('continuationToken', response.continuationToken);
@@ -195,7 +201,13 @@ function getTelemetry(id, query, results, continuationToken, callback) {
   );
 }
 
-function formatFix(fix) {
+/**
+ * Turns a fix string from an asset tracker into an object
+ * that can be stored in the database.
+ * @param {string} fix
+ * @returns {object}
+ */
+function fixStrToObj(fix) {
   const data = fix.data.split(',');
   let newData = {};
   for (let i = 0; i < params.length; i++) {
@@ -215,15 +227,17 @@ function formatFix(fix) {
   return fix;
 }
 
-function saveFix(req) {
+/**
+ * Saves a fix to the table with this coreid
+ * @param {string} coreid
+ * @param {string} timestamp ISO8601 timestamp
+ * @param {object} data
+ * @returns {Promise}
+ */
+function saveFix(coreid, timestamp, data) {
   return new Promise((resolve, reject) => {
-    const coreid = req.body['coreid'],
-      timestamp = req.body['published_at'],
-      data = formatFix(req.body).data;
-
     tableSvc.createTableIfNotExists(coreid.toString(), error => {
       if (!error) {
-        // Table exists or created
         const fix = Object.assign(
           {
             PartitionKey: 'fix',
@@ -251,12 +265,21 @@ function saveFix(req) {
   });
 }
 
+/**
+ * Given a request object, figures out what event handler to call.
+ * Possible values are: 'fix'.
+ * @param {object} req Expressjs request object
+ * @returns {Promise}
+ */
 function createEvent(req) {
   return new Promise((resolve, reject) => {
     if (req.body && req.body.event) {
       switch (req.body.event) {
-      case 'fix':
-        saveFix(req)
+      case 'fix': {
+        const coreid = req.body['coreid'],
+          timestamp = req.body['published_at'],
+          data = fixStrToObj(req.body).data;
+        saveFix(coreid, timestamp, data)
           .then(results => {
             resolve(results);
           })
@@ -264,6 +287,7 @@ function createEvent(req) {
             reject(error);
           });
         break;
+      }
       default:
         reject('Failed: Unknown event type');
       }
@@ -277,6 +301,7 @@ function createEvent(req) {
  * Given an asset ID this function retrieves the most recent
  * fix for that asset.
  * @param {string} id The id of the asset
+ * @returns {Promise}
  */
 function getLastFix(id) {
   return new Promise((resolve, reject) => {
@@ -288,7 +313,7 @@ function getLastFix(id) {
     );
     tableSvc.queryEntities(id, query, null, (error, response) => {
       if (!error) {
-        let fix = parseEntry(response.entries[response.entries.length - 1]);
+        let fix = parseFix(response.entries[response.entries.length - 1]);
         resolve(fix);
       } else {
         reject(error);
@@ -299,6 +324,7 @@ function getLastFix(id) {
 
 /**
  * Retrieve a list of tables
+ * @returns {Promise}
  */
 function getTables() {
   return new Promise((resolve, reject) => {
@@ -329,9 +355,9 @@ app.use('/api/assets/:id/fixes', (req, res) => {
   let query = '',
     resultsArr = [];
   if (req.query.since || req.query.before) {
-    let beforeStr = req.query.before ? `(RowKey <= '${req.query.before}')` : '';
-    let sinceStr = req.query.since ? `(RowKey >= '${req.query.since}')` : '';
-    let andStr = req.query.before && req.query.since ? ' and ' : '';
+    let beforeStr = req.query.before ? `(RowKey <= '${req.query.before}')` : '',
+      sinceStr = req.query.since ? `(RowKey >= '${req.query.since}')` : '',
+      andStr = req.query.before && req.query.since ? ' and ' : '';
     query = new azure.TableQuery()
       .select(query.fix)
       .where(beforeStr + andStr + sinceStr);
