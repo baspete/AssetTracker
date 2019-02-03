@@ -91,7 +91,10 @@ function convertDMToDecimal(dms, direction) {
   const c = direction === 'S' || direction === 'W' ? -1 : 1; // S or W are negative
   const deg = Number(dms.toString().substring(0, s));
   const min = Number(dms.toString().substring(s));
+  // Positive or negative
   let dd = (deg + min / 60) * c;
+  // Round to 7 decimal places
+  dd = Math.round(dd * 1e7) / 1e7;
   return dd;
 }
 
@@ -107,12 +110,14 @@ function parseEntry(entry) {
   for (let field in entry) {
     if (
       entry[field]._ &&
-      field !== 'PartitionKey' && // ignore
-      field !== 'RowKey' // ignore
+      field !== 'lat' && // ignore
+      field !== 'lon' && // ignore
+      field !== 'Timestamp' && // we use RowKey for this
+      field !== 'PartitionKey' // ignore
     ) {
       switch (field) {
-      case 'Timestamp':
-        response[field] = entry[field]._; // string
+      case 'RowKey':
+        response['timestamp'] = entry[field]._;
         break;
       case 'latitude':
         response[field] = convertDMToDecimal(entry[field]._, entry.lat._);
@@ -181,6 +186,7 @@ function getTelemetry(id, query, results, continuationToken, callback) {
         results.push(parseEntry(entry));
       });
       if (response.continuationToken) {
+        console.log('continuationToken', response.continuationToken);
         getTelemetry(query, results, response.continuationToken, callback);
       } else {
         callback(results);
