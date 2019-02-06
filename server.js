@@ -402,7 +402,7 @@ function findTrips(
       if (d >= distanceThreshold || fixes[i].speed >= speedThreshold) {
         // Starting a trip
         if (numFixes === 0) {
-          trip.start = fixes[i].timestamp;
+          trip.start = fixes[i];
           numFixes++;
         } else {
           // Continuing a trip
@@ -411,7 +411,7 @@ function findTrips(
       } else {
         if (numFixes > 0) {
           // Ending a trip
-          trip.end = fixes[i].timestamp;
+          trip.end = fixes[i];
           trip.numFixes = numFixes + 1;
           if (numFixes > fixesThreshold) {
             trips.push(trip);
