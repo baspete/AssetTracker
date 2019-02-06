@@ -172,6 +172,22 @@ function parseFix(entry) {
 }
 
 /**
+ * Retrieve a list of tables
+ * @returns {Promise}
+ */
+function getTables() {
+  return new Promise((resolve, reject) => {
+    tableSvc.listTablesSegmented(null, (error, results) => {
+      if (!error) {
+        resolve(results.entries);
+      } else {
+        reject(error);
+      }
+    });
+  });
+}
+
+/**
  * Runs a table query with specific page size and continuationToken
  * @param {TableQuery}             query             Query to execute
  * @param {array}                  results           An array of items to be appended
@@ -298,6 +314,50 @@ function createEvent(req) {
 }
 
 /**
+ *
+ * @param {string} id Asset ID
+ * @param {string} since ISO8601 string or null
+ * @param {string} before ISO8601 string or null
+ * @returns {Promise}
+ */
+function getFixes(id, since = null, before = null) {
+  return new Promise((resolve, reject) => {
+    let query = '',
+      resultsArr = [];
+    if (since || before) {
+      let beforeStr = before ? `(RowKey <= '${before}')` : '',
+        sinceStr = since ? `(RowKey >= '${since}')` : '',
+        andStr = before && since ? ' and ' : '';
+      query = new azure.TableQuery()
+        .select(query.fix)
+        .where(beforeStr + andStr + sinceStr);
+    } else {
+      // Default is one week's worth of fixes
+      const since = moment()
+        .subtract(1, 'weeks')
+        .toISOString();
+      query = new azure.TableQuery()
+        .select(query.fix)
+        .where('RowKey >= ?', since);
+    }
+    getTelemetry(id, query, resultsArr, null, () => {
+      // Calculate total distance
+      let coords = [];
+      resultsArr.map(fix => {
+        coords.push({ latitude: fix.latitude, longitude: fix.longitude });
+      });
+      resolve({
+        count: resultsArr.length,
+        distance: geolib.convertUnit('sm', geolib.getPathLength(coords)), // sea miles (?!)
+        bounds: geolib.getBounds(coords),
+        items: resultsArr
+      });
+      resultsArr = [];
+    });
+  });
+}
+
+/**
  * Given an asset ID this function retrieves the most recent
  * fix for that asset.
  * @param {string} id The id of the asset
@@ -322,19 +382,50 @@ function getLastFix(id) {
   });
 }
 
-/**
- * Retrieve a list of tables
- * @returns {Promise}
- */
-function getTables() {
+function findTrips(
+  fixes,
+  distanceThreshold = 33, // meters
+  speedThreshold = 1, // knots
+  fixesThreshold = 3 // number of fixes
+) {
   return new Promise((resolve, reject) => {
-    tableSvc.listTablesSegmented(null, (error, results) => {
-      if (!error) {
-        resolve(results.entries);
+    let trips = [];
+    let numFixes = 0;
+    let trip = {};
+    for (let i = 1; i < fixes.length; i++) {
+      let p0 = {
+        latitude: fixes[i - 1].latitude,
+        longitude: fixes[i - 1].longitude
+      };
+      let p1 = { latitude: fixes[i].latitude, longitude: fixes[i].longitude };
+      let d = geolib.getDistanceSimple(p0, p1); // meters
+      if (d >= distanceThreshold || fixes[i].speed >= speedThreshold) {
+        // Starting a trip
+        if (numFixes === 0) {
+          trip.start = fixes[i].timestamp;
+          numFixes++;
+        } else {
+          // Continuing a trip
+          numFixes++;
+        }
       } else {
-        reject(error);
+        if (numFixes > 0) {
+          // Ending a trip
+          trip.end = fixes[i].timestamp;
+          trip.numFixes = numFixes + 1;
+          if (numFixes > fixesThreshold) {
+            trips.push(trip);
+          }
+          // Reset the counters
+          numFixes = 0;
+          trip = {};
+        } else {
+          // nothing to see here, move along
+        }
       }
-    });
+    }
+
+    resolve(trips);
   });
 }
 
@@ -352,37 +443,29 @@ app.put('/api/events', (req, res) => {
 });
 
 app.use('/api/assets/:id/fixes', (req, res) => {
-  let query = '',
-    resultsArr = [];
-  if (req.query.since || req.query.before) {
-    let beforeStr = req.query.before ? `(RowKey <= '${req.query.before}')` : '',
-      sinceStr = req.query.since ? `(RowKey >= '${req.query.since}')` : '',
-      andStr = req.query.before && req.query.since ? ' and ' : '';
-    query = new azure.TableQuery()
-      .select(query.fix)
-      .where(beforeStr + andStr + sinceStr);
-  } else {
-    const now = Date.now(),
-      span = 1000 * 60 * 60 * 24, // 24 hours
-      since = new Date(now - span).toISOString();
-    query = new azure.TableQuery()
-      .select(query.fix)
-      .where('RowKey >= ?', since);
-  }
-  getTelemetry(req.params.id, query, resultsArr, null, () => {
-    // Calculate total distance
-    let coords = [];
-    resultsArr.map(fix => {
-      coords.push({ latitude: fix.latitude, longitude: fix.longitude });
+  getFixes(req.params.id, req.query.since, req.query.before)
+    .then(results => {
+      res.send(results);
+    })
+    .catch(error => {
+      res.status(400).send(error);
     });
-    res.json({
-      count: resultsArr.length,
-      distance: geolib.convertUnit('sm', geolib.getPathLength(coords)), // sea miles (?!)
-      bounds: geolib.getBounds(coords),
-      items: resultsArr
+});
+
+app.use('/api/assets/:id/trips', (req, res) => {
+  getFixes(req.params.id, req.query.since, req.query.before)
+    .then(results => {
+      findTrips(results.items)
+        .then(trips => {
+          res.send(trips);
+        })
+        .catch(error => {
+          res.status(400).send(error);
+        });
+    })
+    .catch(error => {
+      res.status(400).send(error);
     });
-    resultsArr = [];
-  });
 });
 
 app.get('/api/assets/:id?', (req, res) => {
