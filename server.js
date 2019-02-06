@@ -329,7 +329,7 @@ function getFixes(id, since = null, before = null) {
         sinceStr = since ? `(RowKey >= '${since}')` : '',
         andStr = before && since ? ' and ' : '';
       query = new azure.TableQuery()
-        .select(query.fix)
+        .select(query['fix'])
         .where(beforeStr + andStr + sinceStr);
     } else {
       // Default is one week's worth of fixes
@@ -337,7 +337,7 @@ function getFixes(id, since = null, before = null) {
         .subtract(1, 'weeks')
         .toISOString();
       query = new azure.TableQuery()
-        .select(query.fix)
+        .select(query['fix'])
         .where('RowKey >= ?', since);
     }
     getTelemetry(id, query, resultsArr, null, () => {
@@ -392,6 +392,7 @@ function findTrips(
     let trips = [];
     let numFixes = 0;
     let trip = {};
+    let coords = [];
     for (let i = 1; i < fixes.length; i++) {
       let p0 = {
         latitude: fixes[i - 1].latitude,
@@ -402,23 +403,40 @@ function findTrips(
       if (d >= distanceThreshold || fixes[i].speed >= speedThreshold) {
         // Starting a trip
         if (numFixes === 0) {
-          trip.start = fixes[i];
+          trip.start = fixes[i].timestamp;
+          coords.push({
+            latitude: fixes[i].latitude,
+            longitude: fixes[i].longitude
+          });
           numFixes++;
         } else {
           // Continuing a trip
+          coords.push({
+            latitude: fixes[i].latitude,
+            longitude: fixes[i].longitude
+          });
           numFixes++;
         }
       } else {
         if (numFixes > 0) {
           // Ending a trip
-          trip.end = fixes[i];
+          trip.end = fixes[i].timestamp;
           trip.numFixes = numFixes + 1;
+          coords.push({
+            latitude: fixes[i].latitude,
+            longitude: fixes[i].longitude
+          });
+          trip.distance = geolib.convertUnit(
+            'sm',
+            geolib.getPathLength(coords)
+          );
           if (numFixes > fixesThreshold) {
             trips.push(trip);
           }
           // Reset the counters
           numFixes = 0;
           trip = {};
+          coords = [];
         } else {
           // nothing to see here, move along
         }
