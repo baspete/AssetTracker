@@ -70,10 +70,10 @@ function round(value, precision) {
  *          375 -> 15
  *          240 -> 240
  * @param {number} val
- * @returns {number}
+ * @returns {number} a number >= 0 and < 360
  */
 function normalizeToCompass(val) {
-  if (val > 360) {
+  if (val >= 360) {
     val = val - 360;
   }
   if (val < 0) {
@@ -85,8 +85,9 @@ function normalizeToCompass(val) {
 /**
  * Converts latitude or longitude from the concatenated degrees/minutes format
  * returned by the Adafruit GPS library to decimal latitude or longitude.
- * @param {any} dms latitude or longitude with degrees and minutes concatenated
+ * @param {number} dms latitude or longitude with degrees and minutes concatenated
  * @param {string} direction direction from meridium or equator, ie: 'N', 'E', etc
+ * @returns {number} a positive or negative decimal value for latitude or longitude
  */
 function convertDMToDecimal(dms, direction) {
   const s = direction === 'N' || direction === 'S' ? 2 : 3;
@@ -101,8 +102,13 @@ function convertDMToDecimal(dms, direction) {
 }
 
 /**
- * Turns a database fix entry into something useful
+ * Turns a database fix entry into something useful:
+ *  - converts Adafruit GPS library-style lat/longs to decimal lat/longs
+ *  - converts headings into object with mag & true values, adding any
+ *    corrections from the 'corrections' object above
+ *
  * @param {object} entry
+ * @returns {object} a more useful fix
  */
 function parseFix(entry) {
   let response = {};
@@ -173,7 +179,7 @@ function parseFix(entry) {
 
 /**
  * Retrieve a list of tables
- * @returns {Promise}
+ * @returns {Promise} Promise object with the entries in the table query results
  */
 function getTables() {
   return new Promise((resolve, reject) => {
@@ -282,10 +288,10 @@ function saveFix(coreid, timestamp, data) {
 }
 
 /**
- * Given a request object, figures out what event handler to call.
+ * Given a request object, calls the right private method handler.
  * Possible values are: 'fix'.
  * @param {object} req Expressjs request object
- * @returns {Promise}
+ * @returns {Promise} Promise object returns the result of the private function called.
  */
 function createEvent(req) {
   return new Promise((resolve, reject) => {
