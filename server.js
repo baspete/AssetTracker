@@ -316,8 +316,8 @@ function createEvent(req) {
 /**
  *
  * @param {string} id Asset ID
- * @param {string} since ISO8601 string or null
- * @param {string} before ISO8601 string or null
+ * @param {string} [since] ISO8601 date string
+ * @param {string} [before] ISO8601 date string
  * @returns {Promise}
  */
 function getFixes(id, since = null, before = null) {
@@ -382,6 +382,16 @@ function getLastFix(id) {
   });
 }
 
+/**
+ * Given an array of fixes and optional distance, speed or number of fixes lower thresholds,
+ * this function will promise an array of objects, each of which is a trip in the original
+ * array of fixes.
+ * @param {array} fixes
+ * @param {number} [distanceThreshold=33] Minimum distance to start/continue a trip
+ * @param {number} [speedThreshold =1] Minimum speed to start/continue a trip
+ * @param {number} [fixesThreshold=3] Minimum number of fixes to make a trip
+ * @returns {Promise} Promise array of trip objects
+ */
 function findTrips(
   fixes,
   distanceThreshold = 33, // meters
@@ -420,8 +430,6 @@ function findTrips(
       } else {
         if (numFixes > 0) {
           // Ending a trip
-          trip.end = fixes[i].timestamp;
-          trip.numFixes = numFixes + 1;
           coords.push({
             latitude: fixes[i].latitude,
             longitude: fixes[i].longitude
@@ -430,6 +438,8 @@ function findTrips(
             'sm',
             geolib.getPathLength(coords)
           );
+          trip.end = fixes[i].timestamp;
+          trip.numFixes = numFixes + 1;
           if (numFixes > fixesThreshold) {
             trips.push(trip);
           }
@@ -438,7 +448,7 @@ function findTrips(
           trip = {};
           coords = [];
         } else {
-          // nothing to see here, move along
+          // nothing to see here, asset hasn't moved
         }
       }
     }
