@@ -209,7 +209,6 @@ function getTelemetry(id, query, results, continuationToken, callback) {
       results.push(parseFix(entry));
     });
     if (response.continuationToken) {
-      console.log('continuationToken', response.continuationToken);
       getTelemetry(id, query, results, response.continuationToken, callback);
     } else {
       callback(results);
