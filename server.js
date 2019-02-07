@@ -201,26 +201,20 @@ function getTables() {
  * @param {function}               callback          Additional sample operations to run after this one completes
  */
 function getTelemetry(id, query, results, continuationToken, callback) {
-  const telemetryTable = id;
-  tableSvc.queryEntities(
-    telemetryTable,
-    query,
-    continuationToken,
-    (error, response) => {
-      if (error) {
-        return callback(error);
-      }
-      response.entries.map(entry => {
-        results.push(parseFix(entry));
-      });
-      if (response.continuationToken) {
-        console.log('continuationToken', response.continuationToken);
-        getTelemetry(query, results, response.continuationToken, callback);
-      } else {
-        callback(results);
-      }
+  tableSvc.queryEntities(id, query, continuationToken, (error, response) => {
+    if (error) {
+      return callback(error);
     }
-  );
+    response.entries.map(entry => {
+      results.push(parseFix(entry));
+    });
+    if (response.continuationToken) {
+      console.log('continuationToken', response.continuationToken);
+      getTelemetry(id, query, results, response.continuationToken, callback);
+    } else {
+      callback(results);
+    }
+  });
 }
 
 /**
