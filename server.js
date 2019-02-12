@@ -121,7 +121,7 @@ function parseFix(entry) {
     ]).decl;
   for (let field in entry) {
     if (
-      entry[field]._ &&
+      entry[field]._ !== 'undefined' &&
       field !== 'lat' && // ignore
       field !== 'lon' && // ignore
       field !== 'Timestamp' && // we use RowKey for this
@@ -372,7 +372,10 @@ function getLastFix(id) {
     );
     tableSvc.queryEntities(id, query, null, (error, response) => {
       if (!error) {
-        let fix = parseFix(response.entries[response.entries.length - 1]);
+        let fix =
+          response.entries.length > 0
+            ? parseFix(response.entries[response.entries.length - 1])
+            : null;
         resolve(fix);
       } else {
         reject(error);
@@ -518,7 +521,7 @@ app.get('/api/assets/:id?', (req, res) => {
 // ========================================================================
 // WEB APP
 
-app.use('/', express.static('public'));
+app.use('/', express.static('dist'));
 
 // ========================================================================
 // INIT
