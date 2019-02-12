@@ -86,7 +86,9 @@ new Vue({
           el.className = 'marker';
 
           // make a marker for each feature and add to the map
-          new mapboxgl.Marker(el)
+          new mapboxgl.Marker(el, {
+            offset: [0, -15]
+          })
             .setLngLat(marker.geometry.coordinates)
             .setPopup(
               new mapboxgl.Popup({ offset: 25 }).setHTML(
