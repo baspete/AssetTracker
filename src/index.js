@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 /* global require console process Promise module Vue MAPBOX_ACCESS_TOKEN */
 const mapboxgl = require('mapbox-gl/dist/mapbox-gl.js');
+const moment = require('moment');
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 
 function getAssets() {
@@ -16,22 +17,9 @@ function getAssets() {
   });
 }
 
-function getCurrentLocation(id) {
+function getTrips(id) {
   return new Promise((resolve, reject) => {
-    fetch(`/api/assets/${id}`)
-      .then(results => results.json())
-      .then(results => {
-        resolve(results.last);
-      })
-      .catch(error => {
-        reject(error);
-      });
-  });
-}
-
-function getTrips(id, since, before) {
-  return new Promise((resolve, reject) => {
-    fetch(`/api/assets/${id}/trips`)
+    fetch(`/api/assets/${id}/trips?since=2019-02-01Z`)
       .then(results => results.json())
       .then(results => {
         resolve(results);
@@ -40,6 +28,99 @@ function getTrips(id, since, before) {
         reject(error);
       });
   });
+}
+
+function getFixes(id, since, before) {
+  return new Promise((resolve, reject) => {
+    if (id) {
+      let url = `/api/assets/${id}/fixes?`;
+      if (since && before) {
+        url += `since=${since}&before=${before}`;
+      } else {
+        if (since) {
+          url += `since=${since}`;
+        }
+        if (before) {
+          url += `before=${before}`;
+        }
+      }
+      fetch(url)
+        .then(results => results.json())
+        .then(fixes => {
+          resolve(fixes);
+        })
+        .catch(error => {
+          reject(error);
+        });
+    } else {
+      reject('getFixes(): Missing ID');
+    }
+  });
+}
+
+function getLastFix(fixes) {
+  fixes.items = [fixes.items[fixes.items.length - 1]];
+  fixes.count = fixes.items.count;
+  return fixes;
+}
+
+function createMap(id, type, fixes) {
+  // Initialize the map
+  let map = new mapboxgl.Map({
+    container: id,
+    style: 'mapbox://styles/mapbox/light-v10',
+    // TODO: calculate bigger bounding box
+    bounds: [
+      fixes.bounds.minLng,
+      fixes.bounds.minLat,
+      fixes.bounds.maxLng,
+      fixes.bounds.maxLat
+    ]
+  });
+  // Iterate over the fixes and add markers
+  for (let i = 0; i < fixes.items.length; i++) {
+    // Marker for point
+    let marker = {
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [fixes.items[i].longitude, fixes.items[i].latitude]
+      },
+      properties: {
+        title: fixes.items[i].timestamp,
+        description: `Speed: ${fixes.items[i].speed}`
+      }
+    };
+
+    // create a HTML element for each feature
+    let el = document.createElement('div');
+    switch (i) {
+    case 0:
+      el.className = type === 'trip' ? 'start' : 'location';
+      break;
+    case fixes.length:
+      el.className = 'finish';
+      break;
+    default:
+      el.className = 'location';
+    }
+
+    // make a marker for each feature and add to the map
+    new mapboxgl.Marker(el, {
+      offset: [0, -15]
+    })
+      .setLngLat(marker.geometry.coordinates)
+      .setPopup(
+        new mapboxgl.Popup({ offset: 25 }).setHTML(
+          '<p>' +
+            marker.properties.title +
+            '</p><p>' +
+            marker.properties.description +
+            '</p>'
+        )
+      )
+      .addTo(map);
+  }
 }
 
 new Vue({
@@ -57,52 +138,31 @@ new Vue({
         this.asset = assets[0];
       })
       .then(() => {
-        getCurrentLocation(this.assets[0]).then(lastFix => {
-          this.lastFix = location;
-
-          // Initialize the map
-          let map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/light-v10',
-            center: [lastFix.longitude, lastFix.latitude],
-            zoom: 15
+        // Get current location
+        getFixes(
+          this.assets[0],
+          moment()
+            .subtract(19, 'minutes')
+            .toISOString()
+        )
+          .then(fixes => {
+            this.lastFix = getLastFix(fixes);
+            createMap('current-location', 'location', this.lastFix);
+          })
+          .catch(error => {
+            console.log(error);
           });
 
-          // Marker for asset
-          let marker = {
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [lastFix.longitude, lastFix.latitude]
-            },
-            properties: {
-              title: lastFix.timestamp,
-              description: `Speed: ${lastFix.speed}`
-            }
-          };
-
-          // create a HTML element for each feature
-          let el = document.createElement('div');
-          el.className = 'marker';
-
-          // make a marker for each feature and add to the map
-          new mapboxgl.Marker(el, {
-            offset: [0, -15]
-          })
-            .setLngLat(marker.geometry.coordinates)
-            .setPopup(
-              new mapboxgl.Popup({ offset: 25 }).setHTML(
-                '<p>' +
-                  marker.properties.title +
-                  '</p><p>' +
-                  marker.properties.description +
-                  '</p>'
-              )
-            )
-            .addTo(map);
-        });
+        // Get Trips
         getTrips(this.assets[0]).then(trips => {
           this.trips = trips;
+          getFixes(this.assets[0], trips[0].start, trips[0].end)
+            .then(fixes => {
+              createMap('trip', 'trip', fixes);
+            })
+            .catch(error => {
+              console.log(error);
+            });
         });
       });
   }

@@ -5,14 +5,14 @@ module.exports = {
   entry: './src/index.js',
   output: {
     filename: 'main.js',
-    path: path.resolve(__dirname, 'dist')
+    path: path.resolve(__dirname, 'public')
   },
   plugins: [
     new webpack.DefinePlugin({
       MAPBOX_ACCESS_TOKEN: JSON.stringify(process.env.MAPBOX_ACCESS_TOKEN)
     })
   ],
-  // mode: 'development',
-  mode: 'production',
+  mode: 'development',
+  // mode: 'production',
   watch: true
 };

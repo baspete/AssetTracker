@@ -25,6 +25,7 @@
   },
   "repository": "https://github.com/baspete/AssetTracker.git",
   "devDependencies": {
+    "file-loader": "^3.0.1",
     "webpack": "^4.29.3",
     "webpack-cli": "^3.2.3"
   }

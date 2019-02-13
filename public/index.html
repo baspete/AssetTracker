@@ -1,24 +1,29 @@
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
     <link
       rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
       integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS"
       crossorigin="anonymous"
     />
-    <link href='https://api.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.css' rel='stylesheet' />  
-    <link rel='stylesheet' href="/css/base.css"/>
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/base.css" />
   </head>
   <body>
     <div id="app">
-      <p>Location:
-        <div>{{lastFix}}</div>
-      </p>
-      <p>trips:
-        <div v-for="trip in trips">{{trip}}</div>
-      </p>
-      <div id='map' style='width: 600px; height: 500px;'></div>
+      <div id="current-location" style="width: 300px; height: 300px;"></div>
+      <div>
+        trips:
+        <div v-for="trip in trips">{{ trip }}</div>
+        <div id="trip" style="width: 300px; height: 300px;"></div>
+      </div>
     </div>
   </body>
   <!-- development version, includes helpful console warnings -->

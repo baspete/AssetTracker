@@ -357,34 +357,6 @@ function getFixes(id, since = null, before = null) {
 }
 
 /**
- * Given an asset ID this function retrieves the most recent
- * fix for that asset.
- * @param {string} id The id of the asset
- * @returns {Promise}
- */
-function getLastFix(id) {
-  return new Promise((resolve, reject) => {
-    const recent = moment()
-      .subtract(19, 'minutes')
-      .toISOString();
-    const query = new azure.TableQuery().where(
-      `(PartitionKey eq 'fix') and (RowKey ge '${recent}')`
-    );
-    tableSvc.queryEntities(id, query, null, (error, response) => {
-      if (!error) {
-        let fix =
-          response.entries.length > 0
-            ? parseFix(response.entries[response.entries.length - 1])
-            : null;
-        resolve(fix);
-      } else {
-        reject(error);
-      }
-    });
-  });
-}
-
-/**
  * Given an array of fixes and optional distance, speed or number of fixes lower thresholds,
  * this function will promise an array of objects, each of which is a trip in the original
  * array of fixes.
@@ -498,30 +470,20 @@ app.use('/api/assets/:id/trips', (req, res) => {
     });
 });
 
-app.get('/api/assets/:id?', (req, res) => {
-  if (req.params.id) {
-    getLastFix(req.params.id)
-      .then(fix => {
-        res.status(200).send({ last: fix });
-      })
-      .catch(error => {
-        res.status(400).send(error);
-      });
-  } else {
-    getTables()
-      .then(results => {
-        res.status(200).send(results);
-      })
-      .catch(error => {
-        res.status(400).send(error);
-      });
-  }
+app.get('/api/assets', (req, res) => {
+  getTables()
+    .then(results => {
+      res.status(200).send(results);
+    })
+    .catch(error => {
+      res.status(400).send(error);
+    });
 });
 
 // ========================================================================
 // WEB APP
 
-app.use('/', express.static('dist'));
+app.use('/', express.static('public'));
 
 // ========================================================================
 // INIT
