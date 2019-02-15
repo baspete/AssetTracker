@@ -2,6 +2,8 @@
 /* global require console process Promise module Vue MAPBOX_ACCESS_TOKEN */
 const mapboxgl = require('mapbox-gl/dist/mapbox-gl.js');
 const moment = require('moment');
+const geolib = require('geolib');
+
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 
 function getAssets() {
@@ -64,19 +66,29 @@ function getLastFix(fixes) {
   return fixes;
 }
 
+function boundingBox(bounds) {
+  let e = bounds.maxLng + (bounds.maxLng - bounds.minLng) * 0.25;
+  let w = bounds.minLng - (bounds.maxLng - bounds.minLng) * 0.25;
+  let n = bounds.maxLat + (bounds.maxLat - bounds.minLat) * 0.25;
+  let s = bounds.minLat - (bounds.maxLat - bounds.minLat) * 0.25;
+  // if (n === s && w === e) {
+  //   console.log('single point', n, s, e, w);
+  //   e = e + 0.02;
+  //   w = w - 0.02;
+  // }
+  return [w, s, e, n];
+}
+
 function createMap(id, type, fixes) {
   // Initialize the map
   let map = new mapboxgl.Map({
     container: id,
     style: 'mapbox://styles/mapbox/light-v10',
-    // TODO: calculate bigger bounding box
-    bounds: [
-      fixes.bounds.minLng,
-      fixes.bounds.minLat,
-      fixes.bounds.maxLng,
-      fixes.bounds.maxLat
-    ]
+    bounds: boundingBox(fixes.bounds)
   });
+  if (fixes.items.length === 1) {
+    map.setZoom(13);
+  }
   // Iterate over the fixes and add markers
   for (let i = 0; i < fixes.items.length; i++) {
     // Marker for point

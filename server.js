@@ -473,7 +473,12 @@ app.use('/api/assets/:id/trips', (req, res) => {
 app.get('/api/assets', (req, res) => {
   getTables()
     .then(results => {
-      res.status(200).send(results);
+      res.status(200).send(
+        // Filter out any non-assset tables
+        results.filter(id => {
+          return id.length === 24; // Particle GUIDs have 24 chars
+        })
+      );
     })
     .catch(error => {
       res.status(400).send(error);
