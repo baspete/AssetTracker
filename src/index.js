@@ -6,9 +6,13 @@ const geolib = require('geolib');
 
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 
-function getAssets() {
+function getAssets(id = null) {
+  let url = '/api/assets';
+  if (id) {
+    url += `/${id}`;
+  }
   return new Promise((resolve, reject) => {
-    fetch('/api/assets')
+    fetch(url)
       .then(results => results.json())
       .then(assets => {
         resolve(assets);
@@ -19,9 +23,14 @@ function getAssets() {
   });
 }
 
-function getTrips(id) {
+function getTrips(
+  id,
+  since = moment()
+    .subtract(1, 'month')
+    .format()
+) {
   return new Promise((resolve, reject) => {
-    fetch(`/api/assets/${id}/trips?since=2019-02-01Z`)
+    fetch(`/api/assets/${id}/trips?since=${since}`)
       .then(results => results.json())
       .then(results => {
         resolve(results);
@@ -58,18 +67,6 @@ function getFixes(id, since, before) {
       reject('getFixes(): Missing ID');
     }
   });
-}
-
-function getLastFix(fixes) {
-  fixes.items = [fixes.items[fixes.items.length - 1]];
-  fixes.count = fixes.items.count;
-  fixes.bounds = {
-    maxLat: fixes.items[0].latitude,
-    minLat: fixes.items[0].latitude,
-    maxLng: fixes.items[0].longitude,
-    minLng: fixes.items[0].longitude
-  };
-  return fixes;
 }
 
 function boundingBox(bounds, overhang = 0.25) {
@@ -156,14 +153,9 @@ new Vue({
       })
       .then(() => {
         // Get current location
-        getFixes(
-          this.assets[0],
-          moment()
-            .subtract(19, 'minutes')
-            .toISOString()
-        )
-          .then(fixes => {
-            this.lastFix = getLastFix(fixes);
+        getAssets(this.assets[0])
+          .then(asset => {
+            this.lastFix = asset.latest;
             createMap('current-location', 'location', this.lastFix);
           })
           .catch(error => {

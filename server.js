@@ -390,7 +390,7 @@ function getFixes(id, since = null, before = null, latest = false) {
  */
 function findTrips(
   fixes,
-  distanceThreshold = 33, // meters
+  distanceThreshold = 75, // meters
   speedThreshold = 1, // knots
   fixesThreshold = 3 // number of fixes
 ) {
@@ -476,16 +476,6 @@ app.use('/api/assets/:id/fixes', (req, res) => {
     });
 });
 
-app.use('/api/assets/:id/latest', (req, res) => {
-  getFixes(req.params.id, null, null, true)
-    .then(results => {
-      res.send(results);
-    })
-    .catch(error => {
-      res.status(400).send(error);
-    });
-});
-
 app.use('/api/assets/:id/trips', (req, res) => {
   getFixes(req.params.id, req.query.since, req.query.before, false)
     .then(results => {
@@ -496,6 +486,19 @@ app.use('/api/assets/:id/trips', (req, res) => {
         .catch(error => {
           res.status(400).send(error);
         });
+    })
+    .catch(error => {
+      res.status(400).send(error);
+    });
+});
+
+app.use('/api/assets/:id', (req, res) => {
+  getFixes(req.params.id, null, null, true)
+    .then(results => {
+      res.send({
+        id: req.params.id,
+        latest: results
+      });
     })
     .catch(error => {
       res.status(400).send(error);
