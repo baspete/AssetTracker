@@ -1,28 +1,27 @@
-.start {
-  background-image: url('start.svg');
+.marker {
   background-size: cover;
   width: 30px;
   height: 30px;
   border-radius: 50%;
   cursor: pointer;
+}
+
+.start {
+  background-image: url('start.svg');
+}
+
+.waypoint {
+  background-image: url('waypoint.svg');
+  width: 12px;
+  height: 12px;
 }
 
 .finish {
   background-image: url('finish.svg');
-  background-size: cover;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  cursor: pointer;
 }
 
 .location {
   background-image: url('location.svg');
-  background-size: cover;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  cursor: pointer;
 }
 
 .mapboxgl-popup {

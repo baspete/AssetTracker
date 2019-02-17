@@ -253,21 +253,36 @@ function saveFix(coreid, timestamp, data) {
   return new Promise((resolve, reject) => {
     tableSvc.createTableIfNotExists(coreid.toString(), error => {
       if (!error) {
-        const fix = Object.assign(
-          {
-            PartitionKey: 'fix',
-            RowKey: timestamp
-          },
-          data
-        );
-        console.log('Storing', JSON.stringify(fix));
-        // Send it to Azure Table Storage
+        // Insert this into the "fix" partition
         tableSvc.insertOrReplaceEntity(
           coreid,
-          fix,
+          Object.assign(
+            {
+              PartitionKey: 'fix',
+              RowKey: timestamp
+            },
+            data
+          ),
           (error, _result, response) => {
             if (!error) {
-              resolve(response);
+              // Insert this into the "latest" row
+              tableSvc.insertOrReplaceEntity(
+                coreid,
+                Object.assign(
+                  {
+                    PartitionKey: 'fix',
+                    RowKey: 'latest'
+                  },
+                  data
+                ),
+                (error, _result, response) => {
+                  if (!error) {
+                    resolve(response);
+                  } else {
+                    reject(error);
+                  }
+                }
+              );
             } else {
               reject(error);
             }
@@ -335,9 +350,7 @@ function getFixes(id, since = null, before = null) {
       const since = moment()
         .subtract(1, 'weeks')
         .toISOString();
-      query = new azure.TableQuery()
-        .select(query['fix'])
-        .where('RowKey >= ?', since);
+      query = new azure.TableQuery().select(query['fix']).top(5);
     }
     getTelemetry(id, query, resultsArr, null, () => {
       // Calculate total distance

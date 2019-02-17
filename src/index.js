@@ -63,19 +63,20 @@ function getFixes(id, since, before) {
 function getLastFix(fixes) {
   fixes.items = [fixes.items[fixes.items.length - 1]];
   fixes.count = fixes.items.count;
+  fixes.bounds = {
+    maxLat: fixes.items[0].latitude,
+    minLat: fixes.items[0].latitude,
+    maxLng: fixes.items[0].longitude,
+    minLng: fixes.items[0].longitude
+  };
   return fixes;
 }
 
-function boundingBox(bounds) {
-  let e = bounds.maxLng + (bounds.maxLng - bounds.minLng) * 0.25;
-  let w = bounds.minLng - (bounds.maxLng - bounds.minLng) * 0.25;
-  let n = bounds.maxLat + (bounds.maxLat - bounds.minLat) * 0.25;
-  let s = bounds.minLat - (bounds.maxLat - bounds.minLat) * 0.25;
-  // if (n === s && w === e) {
-  //   console.log('single point', n, s, e, w);
-  //   e = e + 0.02;
-  //   w = w - 0.02;
-  // }
+function boundingBox(bounds, overhang = 0.25) {
+  let e = bounds.maxLng + (bounds.maxLng - bounds.minLng) * overhang;
+  let w = bounds.minLng - (bounds.maxLng - bounds.minLng) * overhang;
+  let n = bounds.maxLat + (bounds.maxLat - bounds.minLat) * overhang;
+  let s = bounds.minLat - (bounds.maxLat - bounds.minLat) * overhang;
   return [w, s, e, n];
 }
 
@@ -89,49 +90,53 @@ function createMap(id, type, fixes) {
   if (fixes.items.length === 1) {
     map.setZoom(13);
   }
+
+  // This object will hold our route. We'll add it once the map has loaded
+  let route = [];
+
   // Iterate over the fixes and add markers
   for (let i = 0; i < fixes.items.length; i++) {
-    // Marker for point
-    let marker = {
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [fixes.items[i].longitude, fixes.items[i].latitude]
-      },
-      properties: {
-        title: fixes.items[i].timestamp,
-        description: `Speed: ${fixes.items[i].speed}`
-      }
-    };
+    let fix = fixes.items[i];
 
-    // create a HTML element for each feature
-    let el = document.createElement('div');
-    switch (i) {
-    case 0:
-      el.className = type === 'trip' ? 'start' : 'location';
-      break;
-    case fixes.length:
-      el.className = 'finish';
-      break;
-    default:
-      el.className = 'location';
+    // Markers for the first and last points
+    if (i === 0 || i === fixes.items.length - 1) {
+      new mapboxgl.Marker({
+        color: i === fixes.items.length - 1 ? 'blue' : 'green'
+      })
+        .setLngLat([fix.longitude, fix.latitude])
+        .addTo(map);
     }
+    // // Add this point to our route
+    route.push([fix.longitude, fix.latitude]);
+  }
 
-    // make a marker for each feature and add to the map
-    new mapboxgl.Marker(el, {
-      offset: [0, -15]
-    })
-      .setLngLat(marker.geometry.coordinates)
-      .setPopup(
-        new mapboxgl.Popup({ offset: 25 }).setHTML(
-          '<p>' +
-            marker.properties.title +
-            '</p><p>' +
-            marker.properties.description +
-            '</p>'
-        )
-      )
-      .addTo(map);
+  // Add the route to the map
+  if (type === 'trip') {
+    map.on('load', () => {
+      map.addLayer({
+        id: 'route',
+        type: 'line',
+        source: {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'LineString',
+              coordinates: route
+            }
+          }
+        },
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#888',
+          'line-width': 2
+        }
+      });
+    });
   }
 }
 
