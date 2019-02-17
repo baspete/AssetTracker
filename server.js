@@ -124,12 +124,14 @@ function parseFix(entry) {
       entry[field]._ !== 'undefined' &&
       field !== 'lat' && // ignore
       field !== 'lon' && // ignore
-      field !== 'Timestamp' && // we use RowKey for this
       field !== 'PartitionKey' // ignore
     ) {
       switch (field) {
       case 'RowKey':
         response['timestamp'] = entry[field]._;
+        break;
+      case 'Timestamp':
+        response['savedAt'] = entry[field]._;
         break;
       case 'latitude':
         response[field] = convertDMToDecimal(entry[field]._, entry.lat._);
@@ -335,11 +337,15 @@ function createEvent(req) {
  * @param {string} [before] ISO8601 date string
  * @returns {Promise}
  */
-function getFixes(id, since = null, before = null) {
+function getFixes(id, since = null, before = null, latest = false) {
   return new Promise((resolve, reject) => {
     let query = '',
       resultsArr = [];
-    if (since || before) {
+    if (latest) {
+      query = new azure.TableQuery()
+        .select(query['fix'])
+        .where('RowKey eq \'latest\'');
+    } else if (since || before) {
       let beforeStr = before ? `(RowKey <= '${before}')` : '',
         sinceStr = since ? `(RowKey >= '${since}')` : '',
         andStr = before && since ? ' and ' : '';
@@ -351,7 +357,9 @@ function getFixes(id, since = null, before = null) {
       const since = moment()
         .subtract(1, 'weeks')
         .toISOString();
-      query = new azure.TableQuery().select(query['fix']).top(5);
+      query = new azure.TableQuery()
+        .select(query['fix'])
+        .where('RowKey >= ?', since);
     }
     getTelemetry(id, query, resultsArr, null, () => {
       // Calculate total distance
@@ -459,7 +467,17 @@ app.put('/api/events', (req, res) => {
 });
 
 app.use('/api/assets/:id/fixes', (req, res) => {
-  getFixes(req.params.id, req.query.since, req.query.before)
+  getFixes(req.params.id, req.query.since, req.query.before, false)
+    .then(results => {
+      res.send(results);
+    })
+    .catch(error => {
+      res.status(400).send(error);
+    });
+});
+
+app.use('/api/assets/:id/latest', (req, res) => {
+  getFixes(req.params.id, null, null, true)
     .then(results => {
       res.send(results);
     })
@@ -469,7 +487,7 @@ app.use('/api/assets/:id/fixes', (req, res) => {
 });
 
 app.use('/api/assets/:id/trips', (req, res) => {
-  getFixes(req.params.id, req.query.since, req.query.before)
+  getFixes(req.params.id, req.query.since, req.query.before, false)
     .then(results => {
       findTrips(results.items)
         .then(trips => {
