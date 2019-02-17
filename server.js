@@ -351,7 +351,7 @@ function getFixes(id, since = null, before = null, latest = false) {
         andStr = before && since ? ' and ' : '';
       query = new azure.TableQuery()
         .select(query['fix'])
-        .where(beforeStr + andStr + sinceStr);
+        .where('RowKey != \'latest\' and ' + beforeStr + andStr + sinceStr);
     } else {
       // Default is one week's worth of fixes
       const since = moment()
@@ -359,7 +359,7 @@ function getFixes(id, since = null, before = null, latest = false) {
         .toISOString();
       query = new azure.TableQuery()
         .select(query['fix'])
-        .where('RowKey >= ?', since);
+        .where(`RowKey != 'latest' and RowKey >= '${since}'`);
     }
     getTelemetry(id, query, resultsArr, null, () => {
       // Calculate total distance
