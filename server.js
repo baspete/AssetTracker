@@ -277,6 +277,7 @@ function saveFix(coreid, timestamp, data) {
                 ),
                 (error, _result, response) => {
                   if (!error) {
+                    console.log('Saved Fix:', data);
                     resolve(response);
                   } else {
                     reject(error);
