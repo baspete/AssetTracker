@@ -18,11 +18,21 @@
   </head>
   <body>
     <div id="app">
-      <div id="current-location" style="width: 600px; height: 300px;"></div>
-      <div>
-        trips:
-        <div v-for="trip in trips">{{ trip }}</div>
-        <div id="trip" style="width: 600px; height: 400px;"></div>
+      <div id="map" style="width: 600px; height: 300px;"></div>
+      <div id="current-stats">
+        As of {{ formatTimestamp(latest.savedAt, 'L') }}<br />
+        voltage: {{ latest.v1 }}V<br />
+        cabin temp: {{ c2f(latest.temp1) }}<br />
+      </div>
+      <div id="trips">
+        <div
+          class="trip"
+          v-for="trip in trips"
+          v-on:click="selectTrip(asset, trip)"
+        >
+          {{ formatTimestamp(trip.start, 'lll') }} -
+          {{ trip.distance.toFixed(1) }} nm
+        </div>
       </div>
     </div>
   </body>

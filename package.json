@@ -12,6 +12,7 @@
     "build": "webpack"
   },
   "dependencies": {
+    "apicache": "^1.4.0",
     "azure-storage": "^2.10.2",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",

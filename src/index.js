@@ -137,13 +137,40 @@ function createMap(id, type, fixes) {
   }
 }
 
+function c2f(t) {
+  return (t * 9) / 5 + 32;
+}
+
+function formatTimestamp(t, format) {
+  return moment(t).format(format);
+}
+
+function formatTimeRange(start, end) {
+  const t = moment.duration(moment(end).diff(moment(start)));
+  return t.humanize();
+}
+
+function selectTrip(asset, trip) {
+  getFixes(asset, trip.start, trip.end)
+    .then(fixes => {
+      createMap('map', 'trip', fixes);
+    })
+    .catch(error => {
+      console.log(error);
+    });
+}
+
 new Vue({
   el: '#app',
   data: {
     assets: [],
     asset: null,
-    lastFix: {},
-    trips: []
+    latest: {},
+    trips: [],
+    c2f,
+    formatTimestamp,
+    formatTimeRange,
+    selectTrip
   },
   mounted() {
     getAssets()
@@ -155,8 +182,8 @@ new Vue({
         // Get current location
         getAssets(this.assets[0])
           .then(asset => {
-            this.lastFix = asset.latest;
-            createMap('current-location', 'location', this.lastFix);
+            this.latest = asset.latest.items[0];
+            createMap('map', 'location', asset.latest);
           })
           .catch(error => {
             console.log(error);
@@ -165,13 +192,6 @@ new Vue({
         // Get Trips
         getTrips(this.assets[0]).then(trips => {
           this.trips = trips;
-          getFixes(this.assets[0], trips[0].start, trips[0].end)
-            .then(fixes => {
-              createMap('trip', 'trip', fixes);
-            })
-            .catch(error => {
-              console.log(error);
-            });
         });
       });
   }

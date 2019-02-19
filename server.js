@@ -7,10 +7,13 @@ const express = require('express'),
   moment = require('moment'),
   geomagnetism = require('geomagnetism'),
   geolib = require('geolib'),
+  apicache = require('apicache'),
   app = express();
 
 // Expecting AZURE_STORAGE_CONNECTION_STRING env variable to be set
 let tableSvc = azure.createTableService();
+
+let cache = apicache.middleware;
 
 // ========================================================================
 // SETUP
@@ -35,13 +38,11 @@ const params = [
   { name: 'v2', type: 'float' }
 ];
 
-// Corrections for how the sensor is aligned
-// along the axis of the boat.
-// TODO: this should come from somewhere else
+// Corrections for how the sensor is aligned along the asset's axes.
 const corrections = {
-  heading: 0,
-  pitch: 0,
-  roll: 0
+  heading: process.env.CORRECTION_HEADING || 0,
+  pitch: process.env.CORRECTION_PITCH || 0,
+  roll: process.env.CORRECTION_ROLL || 0
 };
 
 // parse application/x-www-form-urlencoded
@@ -389,14 +390,15 @@ function getFixes(id, since = null, before = null, latest = false) {
  * @returns {Promise} Promise array of trip objects
  */
 function findTrips(
+  id,
   fixes,
-  distanceThreshold = 75, // meters
+  distanceThreshold = 25, // meters
   speedThreshold = 1, // knots
   fixesThreshold = 3 // number of fixes
 ) {
   return new Promise((resolve, reject) => {
-    let trips = [];
     let numFixes = 0;
+    let trips = [];
     let trip = {};
     let coords = [];
     for (let i = 1; i < fixes.length; i++) {
@@ -448,13 +450,14 @@ function findTrips(
         }
       }
     }
-
     resolve(trips);
   });
 }
 
 // ========================================================================
 // API ENDPOINTS
+
+app.use(cache('60 minutes'));
 
 app.put('/api/events', (req, res) => {
   createEvent(req)
@@ -479,7 +482,7 @@ app.use('/api/assets/:id/fixes', (req, res) => {
 app.use('/api/assets/:id/trips', (req, res) => {
   getFixes(req.params.id, req.query.since, req.query.before, false)
     .then(results => {
-      findTrips(results.items)
+      findTrips(req.params.id, results.items)
         .then(trips => {
           res.send(trips);
         })
