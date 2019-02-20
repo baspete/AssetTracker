@@ -19,14 +19,13 @@
   </head>
   <body>
     <div id="app">
-      <div id="temp" style="width: 600px; height: 200px;"></div>
-      <div id="voltage" style="width: 600px; height: 200px;"></div>
-      <div id="map" style="width: 600px; height: 300px;"></div>
-      <div id="current-stats">
-        As of {{ formatTimestamp(latest.savedAt, 'L') }}<br />
-        voltage: {{ latest.v1 }}V<br />
-        cabin temp: {{ c2f(latest.temp1) }}<br />
-      </div>
+      <div>As of {{ formatTimestamp(latest.savedAt, 'L') }}</div>
+      <div>Temp: {{ c2f(latest.temp1) }} F</div>
+      <div id="temp" style="height: 200px;"></div>
+      <div>Voltage: {{ latest.v1 }} V</div>
+      <div id="voltage" style="height: 200px;"></div>
+      <div id="map" style="height: 300px;"></div>
+      <div id="current-stats"></div>
       <div id="trips">
         <div
           class="trip"
