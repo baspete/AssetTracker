@@ -14,10 +14,13 @@
       href="https://api.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.css"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="/css/c3.css" />
     <link rel="stylesheet" href="/css/base.css" />
   </head>
   <body>
     <div id="app">
+      <div id="temp" style="width: 600px; height: 200px;"></div>
+      <div id="voltage" style="width: 600px; height: 200px;"></div>
       <div id="map" style="width: 600px; height: 300px;"></div>
       <div id="current-stats">
         As of {{ formatTimestamp(latest.savedAt, 'L') }}<br />

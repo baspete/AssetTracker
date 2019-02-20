@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 /* global require console process Promise module Vue MAPBOX_ACCESS_TOKEN */
-const mapboxgl = require('mapbox-gl/dist/mapbox-gl.js');
-const moment = require('moment');
-const geolib = require('geolib');
+const mapboxgl = require('mapbox-gl/dist/mapbox-gl.js'),
+  moment = require('moment'),
+  c3 = require('c3');
 
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 
@@ -41,6 +41,13 @@ function getTrips(
   });
 }
 
+/**
+ *
+ * @param {string} id Asset GUID
+ * @param {string} since ISO8601 String
+ * @param {string} before ISO8601 String
+ * @returns {object}
+ */
 function getFixes(id, since, before) {
   return new Promise((resolve, reject) => {
     if (id) {
@@ -77,10 +84,10 @@ function boundingBox(bounds, overhang = 0.25) {
   return [w, s, e, n];
 }
 
-function createMap(id, type, fixes) {
+function renderMap(type, fixes) {
   // Initialize the map
   let map = new mapboxgl.Map({
-    container: id,
+    container: 'map',
     style: 'mapbox://styles/mapbox/light-v10',
     bounds: boundingBox(fixes.bounds)
   });
@@ -153,11 +160,74 @@ function formatTimeRange(start, end) {
 function selectTrip(asset, trip) {
   getFixes(asset, trip.start, trip.end)
     .then(fixes => {
-      createMap('map', 'trip', fixes);
+      renderMap('trip', fixes);
     })
     .catch(error => {
       console.log(error);
     });
+}
+
+function renderSystemsData(data) {
+  // Extract and transform data for rendering
+  const chartData = data.items.map(fix => {
+    return {
+      timestamp: fix.timestamp,
+      temp1: c2f(fix.temp1),
+      v1: fix.v1
+    };
+  });
+  let tempChart = c3.generate({
+    bindto: '#temp',
+    data: {
+      json: chartData,
+      keys: {
+        value: ['temp1'],
+        x: 'timestamp',
+        xFormat: '%Y-%m-%dT%H:%M:%S.%LZ'
+      },
+      xFormat: '%Y-%m-%dT%H:%M:%S.%LZ'
+    },
+    grid: {
+      y: {
+        show: true
+      }
+    },
+    axis: {
+      x: {
+        type: 'timeseries',
+        tick: {
+          count: 7,
+          format: '%m/%d'
+        }
+      }
+    }
+  });
+  let voltageChart = c3.generate({
+    bindto: '#voltage',
+    data: {
+      json: chartData,
+      keys: {
+        value: ['v1'],
+        x: 'timestamp',
+        xFormat: '%Y-%m-%dT%H:%M:%S.%LZ'
+      },
+      xFormat: '%Y-%m-%dT%H:%M:%S.%LZ'
+    },
+    grid: {
+      y: {
+        show: true
+      }
+    },
+    axis: {
+      x: {
+        type: 'timeseries',
+        tick: {
+          count: 7,
+          format: '%m/%d'
+        }
+      }
+    }
+  });
 }
 
 new Vue({
@@ -166,6 +236,7 @@ new Vue({
     assets: [],
     asset: null,
     latest: {},
+    fixes: {},
     trips: [],
     c2f,
     formatTimestamp,
@@ -176,21 +247,36 @@ new Vue({
     getAssets()
       .then(assets => {
         this.assets = assets;
-        this.asset = assets[0];
+        this.asset = assets[0]; // TODO: selector?
       })
       .then(() => {
         // Get current location
-        getAssets(this.assets[0])
+        getAssets(this.asset)
           .then(asset => {
             this.latest = asset.latest.items[0];
-            createMap('map', 'location', asset.latest);
+            renderMap('location', asset.latest);
           })
           .catch(error => {
             console.log(error);
           });
 
+        // Get systems history
+        getFixes(
+          this.asset,
+          moment()
+            .subtract(1, 'week')
+            .toISOString(),
+          null
+        )
+          .then(response => {
+            this.fixes = response;
+          })
+          .then(() => {
+            renderSystemsData(this.fixes);
+          });
+
         // Get Trips
-        getTrips(this.assets[0]).then(trips => {
+        getTrips(this.asset).then(trips => {
           this.trips = trips;
         });
       });
