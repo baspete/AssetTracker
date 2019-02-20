@@ -187,6 +187,9 @@ function renderSystemsData(data) {
       },
       xFormat: '%Y-%m-%dT%H:%M:%S.%LZ'
     },
+    point: {
+      show: false
+    },
     grid: {
       y: {
         show: true
@@ -212,6 +215,9 @@ function renderSystemsData(data) {
         xFormat: '%Y-%m-%dT%H:%M:%S.%LZ'
       },
       xFormat: '%Y-%m-%dT%H:%M:%S.%LZ'
+    },
+    point: {
+      show: false
     },
     grid: {
       y: {
