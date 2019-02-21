@@ -142,6 +142,7 @@ function renderMap(type, fixes) {
       });
     });
   }
+  return map;
 }
 
 function c2f(t) {
@@ -167,6 +168,62 @@ function selectTrip(asset, trip) {
     });
 }
 
+function generateChart(el, keys, data) {
+  const start = moment(data[0].timestamp);
+  const end = moment(data[data.length - 1].timestamp);
+  const days = Math.round(moment.duration(end.diff(start)).asDays());
+  let labels = [];
+  for (let i = days - 1; i >= 0; i--) {
+    labels.push(
+      moment()
+        .startOf('day')
+        .subtract(i, 'days')
+        .local()
+    );
+  }
+  return c3.generate({
+    bindto: el,
+    data: {
+      json: data,
+      keys: {
+        value: keys,
+        x: 'timestamp',
+        xFormat: '%Y-%m-%dT%H:%M:%S.%LZ'
+      },
+      xFormat: '%Y-%m-%dT%H:%M:%S.%LZ'
+    },
+    point: {
+      show: false
+    },
+    grid: {
+      y: {
+        show: true
+      }
+    },
+    axis: {
+      x: {
+        type: 'timeseries',
+        tick: {
+          values: labels,
+          format: T => {
+            return moment(T).format('M/D');
+          }
+        }
+      }
+    },
+    tooltip: {
+      format: {
+        title: t => {
+          return moment(t).format('M/D h:mmA');
+        },
+        value: (value, ratio, id) => {
+          return value;
+        }
+      }
+    }
+  });
+}
+
 function renderSystemsData(data) {
   // Extract and transform data for rendering
   const chartData = data.items.map(fix => {
@@ -176,70 +233,8 @@ function renderSystemsData(data) {
       v1: fix.v1
     };
   });
-  const start = moment(chartData[0].timestamp);
-  const end = moment(chartData[chartData.length - 1].timestamp);
-  let tempChart = c3.generate({
-    bindto: '#temp',
-    data: {
-      json: chartData,
-      keys: {
-        value: ['temp1'],
-        x: 'timestamp',
-        xFormat: '%Y-%m-%dT%H:%M:%S.%LZ'
-      },
-      xFormat: '%Y-%m-%dT%H:%M:%S.%LZ'
-    },
-    point: {
-      show: false
-    },
-    grid: {
-      y: {
-        show: true
-      }
-    },
-    axis: {
-      x: {
-        type: 'timeseries',
-        tick: {
-          count: Math.round(moment.duration(end.diff(start)).asDays()),
-          format: T => {
-            return moment(T).format('M/D h:mmA');
-          }
-        }
-      }
-    }
-  });
-  let voltageChart = c3.generate({
-    bindto: '#voltage',
-    data: {
-      json: chartData,
-      keys: {
-        value: ['v1'],
-        x: 'timestamp',
-        xFormat: '%Y-%m-%dT%H:%M:%S.%LZ'
-      },
-      xFormat: '%Y-%m-%dT%H:%M:%S.%LZ'
-    },
-    point: {
-      show: false
-    },
-    grid: {
-      y: {
-        show: true
-      }
-    },
-    axis: {
-      x: {
-        type: 'timeseries',
-        tick: {
-          count: Math.round(moment.duration(end.diff(start)).asDays()),
-          format: T => {
-            return moment(T).format('M/D h:mmA');
-          }
-        }
-      }
-    }
-  });
+  let tempChart = generateChart('#temp', ['temp1'], chartData);
+  let voltageChart = generateChart('#voltage', ['v1'], chartData);
 }
 
 new Vue({
@@ -266,7 +261,7 @@ new Vue({
         getAssets(this.asset)
           .then(asset => {
             this.latest = asset.latest.items[0];
-            renderMap('location', asset.latest);
+            let map = renderMap('location', asset.latest);
           })
           .catch(error => {
             console.log(error);
@@ -276,7 +271,7 @@ new Vue({
         getFixes(
           this.asset,
           moment()
-            .subtract(1, 'week')
+            .subtract(2, 'weeks')
             .toISOString(),
           null
         )
