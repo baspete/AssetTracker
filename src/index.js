@@ -158,14 +158,20 @@ function formatTimeRange(start, end) {
   return t.humanize();
 }
 
-function selectTrip(asset, trip) {
-  getFixes(asset, trip.start, trip.end)
-    .then(fixes => {
-      renderMap('trip', fixes);
-    })
-    .catch(error => {
-      console.log(error);
-    });
+function selectTrip(asset, index, trips, latest) {
+  if (index === -1) {
+    // current location
+    renderMap('location', latest);
+  } else {
+    // a trip
+    getFixes(asset, trips[index].start, trips[index].end)
+      .then(fixes => {
+        renderMap('trip', fixes);
+      })
+      .catch(error => {
+        console.log(error);
+      });
+  }
 }
 
 function generateChart(el, keys, data) {
@@ -245,6 +251,7 @@ new Vue({
     latest: {},
     fixes: {},
     trips: [],
+    tripindex: -1, // current location
     c2f,
     formatTimestamp,
     formatTimeRange,
@@ -260,8 +267,8 @@ new Vue({
         // Get current location
         getAssets(this.asset)
           .then(asset => {
-            this.latest = asset.latest.items[0];
-            let map = renderMap('location', asset.latest);
+            this.latest = asset.latest;
+            renderMap('location', asset.latest);
           })
           .catch(error => {
             console.log(error);

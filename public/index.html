@@ -19,23 +19,23 @@
   </head>
   <body>
     <div id="app" class="container-fluid">
-      <div>As of {{ formatTimestamp(latest.savedAt, 'lll') }}</div>
-      <div>Temp: {{ c2f(latest.temp1) }} F</div>
-      <div id="temp" style="height: 200px;"></div>
-      <div>Voltage: {{ latest.v1 }} V</div>
-      <div id="voltage" style="height: 200px;"></div>
-      <div id="map" style="height: 300px;"></div>
-      <div id="current-stats"></div>
-      <div id="trips">
-        <div
-          class="trip"
-          v-for="trip in trips"
-          v-on:click="selectTrip(asset, trip)"
+      <div>
+        As of {{ formatTimestamp(latest.savedAt, 'lll') }}
+        <select
+          v-model="tripindex"
+          v-on:change="selectTrip(asset, tripindex, trips, latest)"
         >
-          {{ formatTimestamp(trip.start, 'lll') }} -
-          {{ trip.distance.toFixed(1) }} nm
-        </div>
+          <option v-bind:value="-1">Latest Fix</option>
+          <option v-for="(trip, index) in trips" v-bind:value="index">
+            {{ formatTimestamp(trip.start, 'lll') }} -
+            {{ trip.distance.toFixed(1) }} nm
+          </option>
+        </select>
       </div>
+      <div id="map" style="height: 300px;"></div>
+
+      <div id="temp" style="height: 200px;"></div>
+      <div id="voltage" style="height: 200px;"></div>
     </div>
   </body>
   <!-- development version, includes helpful console warnings -->
