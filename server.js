@@ -457,7 +457,7 @@ function findTrips(
 // ========================================================================
 // API ENDPOINTS
 
-app.use(cache('60 minutes'));
+// app.use(cache('60 minutes'));
 
 app.put('/api/events', (req, res) => {
   createEvent(req)

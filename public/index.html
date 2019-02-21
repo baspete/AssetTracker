@@ -18,8 +18,8 @@
     <link rel="stylesheet" href="/css/base.css" />
   </head>
   <body>
-    <div id="app">
-      <div>As of {{ formatTimestamp(latest.savedAt, 'L') }}</div>
+    <div id="app" class="container-fluid">
+      <div>As of {{ formatTimestamp(latest.savedAt, 'lll') }}</div>
       <div>Temp: {{ c2f(latest.temp1) }} F</div>
       <div id="temp" style="height: 200px;"></div>
       <div>Voltage: {{ latest.v1 }} V</div>

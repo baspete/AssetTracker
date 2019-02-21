@@ -171,11 +171,13 @@ function renderSystemsData(data) {
   // Extract and transform data for rendering
   const chartData = data.items.map(fix => {
     return {
-      timestamp: fix.timestamp,
+      timestamp: moment(fix.timestamp).local(),
       temp1: c2f(fix.temp1),
       v1: fix.v1
     };
   });
+  const start = moment(chartData[0].timestamp);
+  const end = moment(chartData[chartData.length - 1].timestamp);
   let tempChart = c3.generate({
     bindto: '#temp',
     data: {
@@ -199,8 +201,10 @@ function renderSystemsData(data) {
       x: {
         type: 'timeseries',
         tick: {
-          count: 7,
-          format: '%m/%d'
+          count: Math.round(moment.duration(end.diff(start)).asDays()),
+          format: T => {
+            return moment(T).format('M/D h:mmA');
+          }
         }
       }
     }
@@ -228,8 +232,10 @@ function renderSystemsData(data) {
       x: {
         type: 'timeseries',
         tick: {
-          count: 7,
-          format: '%m/%d'
+          count: Math.round(moment.duration(end.diff(start)).asDays()),
+          format: T => {
+            return moment(T).format('M/D h:mmA');
+          }
         }
       }
     }
