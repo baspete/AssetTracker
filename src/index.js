@@ -200,6 +200,7 @@ function generateChart(el, keys, data) {
     },
     point: {
       show: false
+      // r: 1.5
     },
     grid: {
       y: {
@@ -278,7 +279,7 @@ new Vue({
         getFixes(
           this.asset,
           moment()
-            .subtract(2, 'weeks')
+            .subtract(3, 'days')
             .toISOString(),
           null
         )

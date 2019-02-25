@@ -254,48 +254,52 @@ function fixStrToObj(fix) {
  */
 function saveFix(coreid, timestamp, data) {
   return new Promise((resolve, reject) => {
-    tableSvc.createTableIfNotExists(coreid.toString(), error => {
-      if (!error) {
-        // Insert this into the "fix" partition
-        tableSvc.insertOrReplaceEntity(
-          coreid,
-          Object.assign(
-            {
-              PartitionKey: 'fix',
-              RowKey: timestamp
-            },
-            data
-          ),
-          (error, _result, response) => {
-            if (!error) {
-              // Insert this into the "latest" row
-              tableSvc.insertOrReplaceEntity(
-                coreid,
-                Object.assign(
-                  {
-                    PartitionKey: 'fix',
-                    RowKey: 'latest'
-                  },
-                  data
-                ),
-                (error, _result, response) => {
-                  if (!error) {
-                    console.log('Saved Fix:', data);
-                    resolve(response);
-                  } else {
-                    reject(error);
+    if (data.lat && data.lon) {
+      tableSvc.createTableIfNotExists(coreid.toString(), error => {
+        if (!error) {
+          // Insert this into the "fix" partition
+          tableSvc.insertOrReplaceEntity(
+            coreid,
+            Object.assign(
+              {
+                PartitionKey: 'fix',
+                RowKey: timestamp
+              },
+              data
+            ),
+            (error, _result, response) => {
+              if (!error) {
+                // Insert this into the "latest" row
+                tableSvc.insertOrReplaceEntity(
+                  coreid,
+                  Object.assign(
+                    {
+                      PartitionKey: 'fix',
+                      RowKey: 'latest'
+                    },
+                    data
+                  ),
+                  (error, _result, response) => {
+                    if (!error) {
+                      console.log('Saved Fix:', data);
+                      resolve(response);
+                    } else {
+                      reject(error);
+                    }
                   }
-                }
-              );
-            } else {
-              reject(error);
+                );
+              } else {
+                reject(error);
+              }
             }
-          }
-        );
-      } else {
-        reject(error);
-      }
-    });
+          );
+        } else {
+          reject(error);
+        }
+      });
+    } else {
+      reject(`Invalid fix: ${JSON.stringify(data)}`);
+    }
   });
 }
 
