@@ -18,7 +18,7 @@
     "c3": "^0.6.12",
     "express": "^4.16.4",
     "geolib": "^2.0.24",
-    "geomagnetism": "^0.1.0",
+    "geomagnetism": "^0.1.1",
     "mapbox-gl": "^0.53.0",
     "moment": "^2.24.0"
   },

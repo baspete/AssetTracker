@@ -1843,10 +1843,10 @@ geolib@^2.0.24:
   resolved "https://registry.yarnpkg.com/geolib/-/geolib-2.0.24.tgz#eb3d7fbc65f5ea3354a5af6054563ebe9f33e5f4"
   integrity sha512-NR0AyYyEnGrFS9JvSFmmotQDxVCORJgDHdvBwSatxl5aHarOLMh3KuGI83bCvCfObjfoEiDe8Ung8GGLGAtthw==
 
-geomagnetism@^0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/geomagnetism/-/geomagnetism-0.1.0.tgz#18e56d0b2926e69af051fc4e047fc89cf17e6b99"
-  integrity sha512-tw6B0MnYBMIfjYGNa6xjGp8nQyVmomDUq+glB82zns+DI8pdJKe3VWqPZRyADsQS23ZpXH6GfVFx3V6pAAd5oQ==
+geomagnetism@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/geomagnetism/-/geomagnetism-0.1.1.tgz#895560c4717b3a01ba8d1ce54ed609f16e80723b"
+  integrity sha512-XNtaHJCDzcf9UKJ+aBFAZbbuk6dyNqLvrtz5rfxvxTKcpot0rA8VvACd1yXxZIrvp1ZuReBucphhcfEEksrNiQ==
 
 get-caller-file@^1.0.1:
   version "1.0.3"
